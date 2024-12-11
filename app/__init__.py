@@ -1,6 +1,6 @@
 from flask import Flask
 from app.config import Development, Staging, Production
-from app.extensions import db, ma
+from app.extensions import db, ma, migrate
 
 from decouple import config
 
@@ -19,5 +19,6 @@ def create_app():
 
     db.init_app(app)
     ma.init_app(app)
+    migrate.init_app(app, db)
 
     return app
