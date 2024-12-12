@@ -1,0 +1,46 @@
+from app.extensions import db
+from werkzeug.security import generate_password_hash, check_password_hash
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+
+    firstname = db.Column(db.String(50), nullable=True)
+    lastname = db.Column(db.String(50), nullable=True)
+
+    department= db.Column(db.String(50),  nullable=True)
+    current_level = db.Column(db.String(50), nullable=True)
+    matric_no = db.Column(db.String(50), unique=True, nullable=True)
+
+    profile_picture = db.Column(db.String(256), nullable=True)
+
+
+    def hash_password(self, pasword):
+        self.password_hash = generate_password_hash(pasword)
+
+    def verify_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def update_password(self, new_password):
+        self.hash_password(new_password)
+        db.session.commit()
+
+    def onboard_details(self, firstname, secondname, department, current_level, matric_no):
+
+        self.firstname = firstname
+        self.secondname = secondname
+        self.department = department
+        self.current_level = current_level
+        self.matric_no = matric_no
+
+        db.session.commit()
+
+    def update_details(self, current_level, profile_picture):
+
+        self.current_level = current_level
+        self.profile_picture = profile_picture
+
+        db.session.commit()
+
