@@ -4,6 +4,7 @@ from app.extensions import db, ma, migrate
 from app.routes.user_routes import user_bp
 from decouple import config
 
+
 def create_app():
     app = Flask(__name__)
 
@@ -15,7 +16,6 @@ def create_app():
         app.config.from_object(Staging)
     else:  # defaults to development
         app.config.from_object(Development)
-
 
     db.init_app(app)
     ma.init_app(app)

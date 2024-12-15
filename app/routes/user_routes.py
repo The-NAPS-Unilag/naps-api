@@ -5,6 +5,8 @@ from app.schemas.user_schema import UserSchema
 user_bp = Blueprint('user_bp', __name__)
 
 # get user details
+
+
 @user_bp.route('/users/<int:user_id>', methods=['GET'])
 def get_user(user_id):
     user = get_user_by_id(user_id)
@@ -14,6 +16,8 @@ def get_user(user_id):
     return jsonify({'message': 'User not found'}), 404
 
 # create user accoount
+
+
 @user_bp.route('/users', methods=['POST'])
 def create_new_user():
     data = request.get_json()
@@ -26,6 +30,8 @@ def create_new_user():
     return user_schema.dump(new_user), 201
 
 # onboard user account
+
+
 @user_bp.route('/users/onboard/<int:user_id>', methods=['PUT'])
 def onboard_new_user(user_id):
 
@@ -48,9 +54,12 @@ def onboard_new_user(user_id):
         matric_no
     )
 
-    return jsonify({'message': 'Onboard Successful', 'user':  dump_user(user_id)}), 200
+    return jsonify({'message': 'Onboard Successful',
+                   'user': dump_user(user_id)}), 200
 
 # existing user account
+
+
 @user_bp.route('/users/edit/<int:user_id>', methods=['PUT'])
 def edit_existing_user(user_id):
 
@@ -67,13 +76,16 @@ def edit_existing_user(user_id):
         profile_picture
     )
 
-    return jsonify({'message': 'Edited Successful', 'user':  dump_user(user_id)}), 200
+    return jsonify({'message': 'Edited Successful',
+                   'user': dump_user(user_id)}), 200
 
 # delete user account
+
+
 @user_bp.route('/users/delete/<int:user_id>', methods=['DELETE'])
 def delete_existing_user(user_id):
 
     delete_user(user_id)
 
-    return jsonify({'message': 'Delete Successful'}), 204 # i know right, 204 status code is the appropriate thingy
-
+    # i know right, 204 status code is the appropriate thingy
+    return jsonify({'message': 'Delete Successful'}), 204

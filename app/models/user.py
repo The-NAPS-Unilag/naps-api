@@ -1,6 +1,7 @@
 from app.extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
@@ -10,12 +11,11 @@ class User(db.Model):
     firstname = db.Column(db.String(50), nullable=True)
     lastname = db.Column(db.String(50), nullable=True)
 
-    department= db.Column(db.String(50),  nullable=True)
+    department = db.Column(db.String(50), nullable=True)
     current_level = db.Column(db.String(50), nullable=True)
     matric_no = db.Column(db.String(50), unique=True, nullable=True)
 
     profile_picture = db.Column(db.String(256), nullable=True)
-
 
     def hash_password(self, pasword):
         self.password_hash = generate_password_hash(pasword)
@@ -27,7 +27,13 @@ class User(db.Model):
         self.hash_password(new_password)
         db.session.commit()
 
-    def onboard_details(self, firstname, secondname, department, current_level, matric_no):
+    def onboard_details(
+            self,
+            firstname,
+            secondname,
+            department,
+            current_level,
+            matric_no):
 
         self.firstname = firstname
         self.secondname = secondname
@@ -43,4 +49,3 @@ class User(db.Model):
         self.profile_picture = profile_picture
 
         db.session.commit()
-
