@@ -6,3 +6,8 @@ microservices for the  NAPS applications.
 flask db migrate -m "update migration"
 flask db upgrade
 ```
+
+### before push (auto linter)
+```
+autopep8 --in-place --aggressive --aggressive $(git ls-files '*.py')
+```
