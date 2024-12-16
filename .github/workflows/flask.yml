@@ -17,6 +17,7 @@ jobs:
       TEST_SECRET_KEY: ${{ secrets.TEST_SECRET_KEY }}
       TEST_DATABASE_URI: ${{ secrets.TEST_DATABASE_URI }}
       FLASK_ENV: ${{ secrets.FLASK_ENV }}
+      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
 
     steps:
     - uses: actions/checkout@v4
