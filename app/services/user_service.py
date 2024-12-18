@@ -2,6 +2,7 @@ from flask import jsonify
 from app.models.user import User
 from app.extensions import db
 from app.schemas.user_schema import UserSchema
+from werkzeug.security import generate_password_hash
 
 
 def get_user_by_id(user_id):
@@ -37,22 +38,33 @@ def dump_user(user_id):
         return jsonify({'msg': 'Error, could not dump!'}), 404
 
 
+def filter_by_email(email):
+    user = User.query.filter_by(email=email).first()
+
+    return user
+
 # create a new user account
 # TODO handle otp and email verification
-def create_user(email, password):
 
-    new_user = User(email=email)
+
+def create_user(email, current_level, matric_no, password):
+
+    user_schema = UserSchema()
+
+    new_user = User(
+        email=email,
+        current_level=current_level,
+        matric_no=matric_no,
+    )
+
     new_user.hash_password(password)
-
     db.session.add(new_user)
     db.session.commit()
 
-    return new_user
-
-# shortly after creating an account, the user provides this details
+    return user_schema.dump(new_user)
 
 
-def onboard_user(
+def onboard_user(  # useless now, due to requirements chnages lol
         user_id,
         firstname,
         secondname,
@@ -70,8 +82,6 @@ def onboard_user(
 
     return onboard_user
 
-# edit user details(after the onboarding). details subject to change
-
 
 def edit_user(user_id, current_level, profile_picture):
 
@@ -79,8 +89,6 @@ def edit_user(user_id, current_level, profile_picture):
     edit_user.update_details(current_level, profile_picture)
 
     return edit_user
-
-# TODO delete user
 
 
 def delete_user(user_id):
