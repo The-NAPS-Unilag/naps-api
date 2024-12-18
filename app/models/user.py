@@ -17,8 +17,8 @@ class User(db.Model):
 
     profile_picture = db.Column(db.String(256), nullable=True)
 
-    def hash_password(self, pasword):
-        self.password_hash = generate_password_hash(pasword)
+    def hash_password(self, password):
+        self.password_hash = generate_password_hash(password)
 
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
