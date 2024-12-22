@@ -48,6 +48,21 @@ def login_user():
     else:
         return jsonify({'message': 'Invalid credentials'}), 401
 
+# login user account with matric number
+
+
+@user_bp.route('users/login/matric', methods=['POST'])
+def login_user_matric():
+    data = request.get_json()
+
+    user_matric = User.query.filter_by(matric_no=data['matric_no']).first()
+
+    if user_matric and user_matric.verify_password(data['password']):
+        access_token = create_access_token(identity=user_matric.id)
+        return jsonify(access_token=access_token), 200
+    else:
+        return jsonify({'message': 'Invalid credentials'}), 401
+
 # onboard user account
 
 
