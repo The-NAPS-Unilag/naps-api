@@ -1,16 +1,19 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from app.services.user_service import filter_by_email, get_user_by_id, create_user, onboard_user, edit_user, user_exist, load_user, dump_user, delete_user
+from app.services.user_service import filter_by_email, get_user_by_id, create_user, edit_user
 from app.schemas.user_schema import UserSchema
 from app.extensions import db
 from werkzeug.security import check_password_hash
 from app.models.user import User
+from app.decorators.api_decorator import api_key_required
+
 user_bp = Blueprint('user_bp', __name__)
 
 # get user details
 
 
 @user_bp.route('/users/<int:user_id>', methods=['GET'])
+@api_key_required
 def get_user(user_id):
     user = get_user_by_id(user_id)
     if user:
@@ -22,6 +25,7 @@ def get_user(user_id):
 
 
 @user_bp.route('/users', methods=['POST'])
+@api_key_required
 def create_new_user():
     data = request.get_json()
 
@@ -37,6 +41,7 @@ def create_new_user():
 
 
 @user_bp.route('users/login', methods=['POST'])
+@api_key_required
 def login_user():
     data = request.get_json()
 
@@ -52,6 +57,7 @@ def login_user():
 
 
 @user_bp.route('users/login/matric', methods=['POST'])
+@api_key_required
 def login_user_matric():
     data = request.get_json()
 
@@ -96,6 +102,7 @@ def onboard_new_user(user_id):
 
 
 @user_bp.route('/users/update/<int:user_id>', methods=['PUT'])
+@api_key_required
 @jwt_required()
 def edit_existing_user(user_id):
 
@@ -121,6 +128,7 @@ def edit_existing_user(user_id):
 
 
 @user_bp.route('/users/delete/<int:user_id>', methods=['DELETE'])
+@api_key_required
 @jwt_required()
 def delete_existing_user(user_id):
 

@@ -2,7 +2,7 @@ from flask import Flask
 from app.config import Development, Staging, Production
 from app.extensions import db, ma, migrate, jwt
 from app.routes.user_routes import user_bp
-from app.routes.api_routes import auth_bp
+from app.routes.api_auth_routes import auth_bp
 from decouple import config
 
 
