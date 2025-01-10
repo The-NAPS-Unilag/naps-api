@@ -17,6 +17,9 @@ class User(db.Model):
 
     profile_picture = db.Column(db.String(256), nullable=True)
 
+    is_admin = db.Column(db.Boolean, default=False)
+    is_verified = db.Column(db.Boolean, default=False)
+
     def hash_password(self, password):
         self.password_hash = generate_password_hash(password)
 
