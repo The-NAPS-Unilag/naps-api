@@ -35,6 +35,14 @@ def test_edit_existing_user(test_client, user_token_header):
         headers=user_token_header)
     assert response.status_code == 200
 
+def test_list_one_user(test_client, api_key_header):
+    response = test_client.get('api/users/1', headers=api_key_header)
+    assert response.status_code == 200
+
+def test_list_all_users(test_client, api_key_header):
+    response = test_client.get('api/users', headers=api_key_header)
+    assert response.status_code == 200
+
 def test_delete_existing_user(test_client, api_key_header):
     # Create a new user to delete
     response = test_client.post('/api/users', json={
