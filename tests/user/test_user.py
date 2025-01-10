@@ -1,4 +1,4 @@
-import json
+
 
 def test_user_signup(test_client, api_key_header):
     response = test_client.post('/api/users', json={

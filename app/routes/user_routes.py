@@ -9,7 +9,7 @@ from app.decorators.api_decorator import api_key_required
 
 user_bp = Blueprint('user_bp', __name__)
 
-# get user details
+# get user detail
 
 
 @user_bp.route('/users/<int:user_id>', methods=['GET'])
@@ -20,6 +20,19 @@ def get_user(user_id):
         user_schema = UserSchema()
         return user_schema.dump(user)
     return jsonify({'message': 'User not found'}), 404
+
+# get all users
+
+@user_bp.route('/users', methods=['GET'])
+@api_key_required
+def list_all_users():
+    users = User.query.all()
+    user_schema = UserSchema(many=True)
+
+    # TODO: Pagination
+
+    return user_schema.dump(users)
+
 
 # create user accoount
 
@@ -125,7 +138,6 @@ def edit_existing_user(user_id):
     return jsonify({'message': 'Edited Successful'}), 200
 
 # delete user account
-
 
 @user_bp.route('/users/delete/<int:user_id>', methods=['DELETE'])
 @api_key_required
