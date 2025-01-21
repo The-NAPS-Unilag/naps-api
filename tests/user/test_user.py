@@ -35,13 +35,27 @@ def test_edit_existing_user(test_client, user_token_header):
         headers=user_token_header)
     assert response.status_code == 200
 
-def test_list_one_user(test_client, api_key_header):
-    response = test_client.get('api/users/1', headers=api_key_header)
+def test_list_one_user(test_client, user_token_header):
+    response = test_client.get('api/users/1', headers=user_token_header)
     assert response.status_code == 200
 
-def test_list_all_users(test_client, api_key_header):
-    response = test_client.get('api/users', headers=api_key_header)
+def test_list_all_users(test_client, user_token_header):
+    page = 1
+    per_page = 10
+
+    response = test_client.get(
+        f'api/users?page={page}&per_page={per_page}',
+        headers=user_token_header
+    )
+
+    data = response.get_json()
+
     assert response.status_code == 200
+    assert 'users' in data
+    assert 'total' in data
+    assert 'pages' in data
+    assert 'current_page' in data
+    assert data['current_page'] == page
 
 def test_delete_existing_user(test_client, api_key_header):
     # Create a new user to delete
