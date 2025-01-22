@@ -14,6 +14,7 @@ user_bp = Blueprint('user_bp', __name__)
 
 @user_bp.route('/users/<int:user_id>', methods=['GET'])
 @api_key_required
+@jwt_required()
 def get_user(user_id):
     user = get_user_by_id(user_id)
     if user:
@@ -25,16 +26,24 @@ def get_user(user_id):
 
 @user_bp.route('/users', methods=['GET'])
 @api_key_required
+@jwt_required()
 def list_all_users():
-    users = User.query.all()
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+
+    users = User.query.paginate(page=page, per_page=per_page, error_out=False)
     user_schema = UserSchema(many=True)
 
-    # TODO: Pagination
+    result = {
+        'users': user_schema.dump(users.items),
+        'total': users.total,
+        'pages': users.pages,
+        'current_page': users.page
+    }
 
-    return user_schema.dump(users)
+    return jsonify(result), 200
 
-
-# create user accoount
+# create user account
 
 
 @user_bp.route('/users', methods=['POST'])
