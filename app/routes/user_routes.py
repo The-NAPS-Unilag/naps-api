@@ -1,6 +1,12 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from app.services.user_service import filter_by_email, get_user_by_id, create_user, edit_user
+from app.services.user_service import( filter_by_email,
+    get_user_by_id,
+    create_user,
+    edit_user,
+    confirm_user_email,
+    send_verification_email
+)
 from app.schemas.user_schema import UserSchema
 from app.extensions import db
 from werkzeug.security import check_password_hash
@@ -9,7 +15,6 @@ from app.decorators.api_decorator import api_key_required
 
 user_bp = Blueprint('user_bp', __name__)
 
-# get user detail
 
 
 @user_bp.route('/users/<int:user_id>', methods=['GET'])
@@ -22,7 +27,7 @@ def get_user(user_id):
         return user_schema.dump(user)
     return jsonify({'message': 'User not found'}), 404
 
-# get all users
+
 
 @user_bp.route('/users', methods=['GET'])
 @api_key_required
@@ -43,39 +48,85 @@ def list_all_users():
 
     return jsonify(result), 200
 
-# create user account
 
+
+
+@user_bp.route('/users/confirm', methods=['POST'])
+@api_key_required
+def confirm_email():
+    """Confirm user email with OTP"""
+    data = request.get_json()
+    email = data.get('email')
+    otp = data.get('otp')
+
+    if not email or not otp:
+        return jsonify({'message': 'Email and OTP are required'}), 400
+
+    return confirm_user_email(email, otp)
+
+@user_bp.route('/users/resend-otp', methods=['POST'])
+@api_key_required
+def resend_verification_otp():
+    """Resend verification OTP"""
+    data = request.get_json()
+    email = data.get('email')
+
+    if not email:
+        return jsonify({'message': 'Email is required'}), 400
+
+    user = filter_by_email(email)
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    return send_verification_email(user)
 
 @user_bp.route('/users', methods=['POST'])
 @api_key_required
 def create_new_user():
+    """Create new user account"""
     data = request.get_json()
 
-    new_user = create_user(
-        data['email'],
-        data['current_level'],
-        data['matric_no'],
-        data['password'])
+    # Validate input
+    required_fields = ['email', 'current_level', 'matric_no', 'password']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'message': f'{field} is required'}), 400
 
-    return new_user, 201
+    try:
+        new_user = create_user(
+            data['email'],
+            data['current_level'],
+            data['matric_no'],
+            data['password']
+        )
+        return new_user, 201
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
 
-# login user account
-
-
-@user_bp.route('users/login', methods=['POST'])
+@user_bp.route('/users/login', methods=['POST'])
 @api_key_required
 def login_user():
+    """User login with email and password"""
     data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
 
-    user = filter_by_email(data['email'])
+    if not email or not password:
+        return jsonify({'message': 'Email and password are required'}), 400
 
-    if user and user.verify_password(data['password']):
+    user = filter_by_email(email)
+
+    if user and user.verify_password(password):
+        # Ensure email is confirmed
+        if not user.is_confirmed:
+            return jsonify({'message': 'Please confirm your email first'}), 403
+
         access_token = create_access_token(identity=user.id)
         return jsonify(access_token=access_token), 200
-    else:
-        return jsonify({'message': 'Invalid credentials'}), 401
 
-# login user account with matric number
+    return jsonify({'message': 'Invalid credentials'}), 401
+
+
 
 
 @user_bp.route('users/login/matric', methods=['POST'])
@@ -91,7 +142,7 @@ def login_user_matric():
     else:
         return jsonify({'message': 'Invalid credentials'}), 401
 
-# onboard user account
+
 
 
 """
@@ -120,7 +171,6 @@ def onboard_new_user(user_id):
     return jsonify({'message': 'Onboard Successful',
                    'user': dump_user(user_id)}), 200
 """
-# existing user account
 
 
 @user_bp.route('/users/update/<int:user_id>', methods=['PUT'])
@@ -146,7 +196,7 @@ def edit_existing_user(user_id):
 
     return jsonify({'message': 'Edited Successful'}), 200
 
-# delete user account
+
 
 @user_bp.route('/users/delete/<int:user_id>', methods=['DELETE'])
 @api_key_required
