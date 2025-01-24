@@ -1,7 +1,6 @@
 from app.extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
-
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
@@ -17,12 +16,12 @@ class User(db.Model):
 
     profile_picture = db.Column(db.String(256), nullable=True)
 
-    created_on = db.Column(db.DateTime, nullable=False)
+    created_on = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     is_admin = db.Column(db.Boolean, default=False) # Admins
     is_verified = db.Column(db.Boolean, default=False) # Admins verify users(students)
 
-    is_confirmed = db.Column(db.Boolean, nullable=False, default=False) # Users(students) confirm their emails
+    is_confirmed = db.Column(db.Boolean, nullable=True, default=False) # Users(students) confirm their emails
     confirmed_on = db.Column(db.DateTime, nullable=True)
 
     def hash_password(self, password):
