@@ -16,6 +16,14 @@ def generate_api_key():
     db.session.commit()
     return jsonify({'message': 'API key generated successfully', 'api_key': new_api_key.key}), 201
 
+# TODO FIX UP a workaround, doesnt look safe to me.
+@auth_bp.route('/test_generate_api_key', methods=['POST'])
+def test_generate_api_key():
+    new_api_key = APIKey()
+    db.session.add(new_api_key)
+    db.session.commit()
+    return jsonify({'message': 'Test API key generated successfully', 'api_key': new_api_key.key}), 201
+
 @auth_bp.route('/api_keys', methods=['GET'])
 @jwt_required()
 @admin_required

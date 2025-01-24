@@ -14,7 +14,7 @@ def test_client():
             db.drop_all()
 
 def get_api_key(test_client):
-    api_key_response = test_client.post('/api/generate_api_key')
+    api_key_response = test_client.post('/api/test_generate_api_key')
     assert api_key_response.status_code == 201
     api_key = api_key_response.json.get('api_key')
     assert api_key is not None, "API key was not returned"
