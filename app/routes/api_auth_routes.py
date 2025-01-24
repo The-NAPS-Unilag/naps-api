@@ -3,10 +3,12 @@ from app.extensions import db
 from app.models.api_key import APIKey
 from app.decorators.admin_decorator import admin_required
 from app.schemas.api_key_schema import APIKeySchema
+from flask_jwt_extended import jwt_required
 
 auth_bp = Blueprint('auth_bp', __name__)
 
 @auth_bp.route('/generate_api_key', methods=['POST'])
+@jwt_required()
 @admin_required
 def generate_api_key():
     new_api_key = APIKey()
@@ -15,6 +17,7 @@ def generate_api_key():
     return jsonify({'message': 'API key generated successfully', 'api_key': new_api_key.key}), 201
 
 @auth_bp.route('/api_keys', methods=['GET'])
+@jwt_required()
 @admin_required
 def list_api_keys():
     api_keys = APIKey.query.all()
@@ -23,6 +26,7 @@ def list_api_keys():
     return api_key_schema.dump(api_keys), 200
 
 @auth_bp.route('/api_keys/<int:api_key_id>', methods=['DELETE'])
+@jwt_required()
 @admin_required
 def delete_api_key(api_key_id):
     api_key = APIKey.query.get(api_key_id)
