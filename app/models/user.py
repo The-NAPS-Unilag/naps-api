@@ -22,7 +22,7 @@ class User(db.Model):
     is_verified = db.Column(db.Boolean, default=False) # Admins verify users(students)
 
     is_confirmed = db.Column(db.Boolean, nullable=True, default=False) # Users(students) confirm their emails
-    confirmed_on = db.Column(db.DateTime, nullable=True)
+    confirmed_on = db.Column(db.DateTime, nullable=True) # time of email
 
     def hash_password(self, password):
         self.password_hash = generate_password_hash(password)
