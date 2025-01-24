@@ -1,15 +1,13 @@
 name:   Flask API testing
 
-on: [push]
+on:
+  push:
+    branches:
+      - '**'
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 4
-      matrix:
-        python-version: [3.7, 3.8, 3.9]
 
     env:
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
@@ -18,14 +16,16 @@ jobs:
       TEST_DATABASE_URI: ${{ secrets.TEST_DATABASE_URI }}
       FLASK_ENV: ${{ secrets.FLASK_ENV }}
       JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      API_KEY: ${{ secrets.API_KEY }}
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+    - name: Set up Python
+      uses: actions/setup-python@v2
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: 3.x
 
     - name: Install dependencies
       run: |
