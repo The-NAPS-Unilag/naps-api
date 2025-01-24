@@ -17,8 +17,13 @@ class User(db.Model):
 
     profile_picture = db.Column(db.String(256), nullable=True)
 
-    is_admin = db.Column(db.Boolean, default=False)
-    is_verified = db.Column(db.Boolean, default=False)
+    created_on = db.Column(db.DateTime, nullable=False)
+
+    is_admin = db.Column(db.Boolean, default=False) # Admins
+    is_verified = db.Column(db.Boolean, default=False) # Admins verify users(students)
+
+    is_confirmed = db.Column(db.Boolean, nullable=False, default=False) # Users(students) confirm their emails
+    confirmed_on = db.Column(db.DateTime, nullable=True)
 
     def hash_password(self, password):
         self.password_hash = generate_password_hash(password)
