@@ -13,7 +13,7 @@ from app.models.user import User
 from app.schemas.user_schema import UserSchema
 from werkzeug.security import generate_password_hash, check_password_hash
 from email_validator import validate_email, EmailNotValidError
-
+from sqlalchemy.orm import Session
 
 
 # OTP Configuration
@@ -21,7 +21,7 @@ otp_store: Dict[str, Dict] = {}
 OTP_REQUEST_LIMIT = 5
 OTP_REQUEST_WINDOW = datetime.timedelta(minutes=15)
 OTP_RESEND_COOLDOWN = datetime.timedelta(minutes=1)
-OTP_EXPIRY_TIME = datetime.timedelta(minutes=10)
+OTP_EXPIRY_TIME = datetime.timedelta(minutes=5)
 
 def generate_otp():
     return ''.join(secrets.choice(string.digits) for _ in range(6))
@@ -135,7 +135,8 @@ def cleanup_expired_otps():
         del otp_store[email]
 
 def get_user_by_id(user_id):
-    return User.query.get(user_id)
+    with Session(db.engine) as session:
+        return session.get(User, user_id)
 
 
 def user_exist(user_id):
@@ -229,9 +230,9 @@ def edit_user(user_id, current_level, profile_picture):
 def delete_user(user_id):
     try:
         if(user_exist(user_id)):
-            user = User.query.get(user_id)
-
-            db.session.delete(user)
-            db.session.commit()
+            with Session(db.engine) as session:
+                    user = session.get(User, user_id)
+                    session.delete(user)
+                    session.commit()
     except BaseException:
         return jsonify({'msg': 'Error, could not delete user!'}), 404
