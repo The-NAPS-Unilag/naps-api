@@ -12,6 +12,7 @@ from app.extensions import db
 from werkzeug.security import check_password_hash
 from app.models.user import User
 from app.decorators.api_decorator import api_key_required
+from sqlalchemy.orm import Session
 
 user_bp = Blueprint('user_bp', __name__)
 
@@ -208,9 +209,12 @@ def delete_existing_user(user_id):
         return jsonify({'message': 'Permission denied'}), 403
 
     # delete_user(user_id)
-    user = User.query.get(current_user_id)
+    user = get_user_by_id(current_user_id)
 
-    db.session.delete(user)
-    db.session.commit()
+
+    with Session(db.engine) as session:
+        user = session.get(User, current_user_id)
+        session.delete(user)
+        session.commit()
 
     return jsonify({'message': 'Delete Successful'}), 200
