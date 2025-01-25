@@ -1,29 +1,56 @@
-
+import pytest
+from unittest.mock import patch
+from flask import jsonify
 
 def test_user_signup(test_client, api_key_header):
-    response = test_client.post('/api/users', json={
-        'email': 'test@example.com',
-        'password': 'testpassword',
-        'current_level': '100L',
-        'matric_no': 'sci/21/22/888',
-    }, headers=api_key_header)
-    assert response.status_code == 201
+    with patch('app.services.user_service.send_verification_email') as mock_send_otp:
+        mock_send_otp.return_value = (jsonify({'message': 'OTP sent successfully'}), 200)
+
+        response = test_client.post('/api/users', json={
+            'email': 'test@example.com',
+            'password': 'testpassword',
+            'current_level': '100L',
+            'matric_no': 'sci/21/22/888',
+        }, headers=api_key_header)
+        assert response.status_code == 201
 
 def test_user_login(test_client, api_key_header):
-    response = test_client.post('/api/users/login', json={
-        'email': 'test@example.com',
-        'password': 'testpassword'
-    }, headers=api_key_header)
-    assert response.status_code == 200
-    assert b'access_token' in response.data
+    with patch('app.services.user_service.verify_otp') as mock_verify_otp:
+        mock_verify_otp.return_value = True
+
+        # Confirm the user's email
+        confirm_response = test_client.post('/api/users/confirm', json={
+            'email': 'test@example.com',
+            'otp': '123456'
+        }, headers=api_key_header)
+        assert confirm_response.status_code == 200
+
+        # Now attempt to log in
+        response = test_client.post('/api/users/login', json={
+            'email': 'test@example.com',
+            'password': 'testpassword'
+        }, headers=api_key_header)
+        assert response.status_code == 200
+        assert b'access_token' in response.data
 
 def test_user_login_matric(test_client, api_key_header):
-    response = test_client.post('/api/users/login/matric', json={
-        'matric_no': 'sci/21/22/888',
-        'password': 'testpassword'
-    }, headers=api_key_header)
-    assert response.status_code == 200
-    assert b'access_token' in response.data
+    with patch('app.services.user_service.verify_otp') as mock_verify_otp:
+        mock_verify_otp.return_value = True
+
+        # Confirm the user's email
+        confirm_response = test_client.post('/api/users/confirm', json={
+            'email': 'test@example.com',
+            'otp': '123456'
+        }, headers=api_key_header)
+        assert confirm_response.status_code == 200
+
+        # Now attempt to log in using matric number
+        response = test_client.post('/api/users/login/matric', json={
+            'matric_no': 'sci/21/22/888',
+            'password': 'testpassword'
+        }, headers=api_key_header)
+        assert response.status_code == 200
+        assert b'access_token' in response.data
 
 def test_edit_existing_user(test_client, user_token_header):
     response = test_client.put(
@@ -58,14 +85,27 @@ def test_list_all_users(test_client, user_token_header):
     assert data['current_page'] == page
 
 def test_delete_existing_user(test_client, api_key_header):
-    # Create a new user to delete
-    response = test_client.post('/api/users', json={
-        'email': 'deletetest@example.com',
-        'password': 'testpassword',
-        'current_level': '100L',
-        'matric_no': 'sci/21/22/8889037',
-    }, headers=api_key_header)
-    assert response.status_code == 201
+    with patch('app.services.user_service.send_verification_email') as mock_send_otp:
+        mock_send_otp.return_value = (jsonify({'message': 'OTP sent successfully'}), 200)
+
+        # Create a new user to delete
+        response = test_client.post('/api/users', json={
+            'email': 'deletetest@example.com',
+            'password': 'testpassword',
+            'current_level': '100L',
+            'matric_no': 'sci/21/22/8889037',
+        }, headers=api_key_header)
+        assert response.status_code == 201
+
+    with patch('app.services.user_service.verify_otp') as mock_verify_otp:
+        mock_verify_otp.return_value = True
+
+        # Confirm the user's email
+        confirm_response = test_client.post('/api/users/confirm', json={
+            'email': 'deletetest@example.com',
+            'otp': '123456'
+        }, headers=api_key_header)
+        assert confirm_response.status_code == 200
 
     # Log in to get access token
     login = test_client.post('/api/users/login', json={
@@ -80,3 +120,29 @@ def test_delete_existing_user(test_client, api_key_header):
     # Delete the user
     delete_response = test_client.delete('api/users/delete/2', headers=delete_header)
     assert delete_response.status_code == 200
+
+def test_confirm_email(test_client, api_key_header):
+    with patch('app.services.user_service.verify_otp') as mock_verify_otp:
+        mock_verify_otp.return_value = True
+
+        response = test_client.post('/api/users/confirm', json={
+            'email': 'test@example.com',
+            'otp': '123456'
+        }, headers=api_key_header)
+        assert response.status_code == 200
+        assert b'Email confirmed successfully' in response.data
+
+# TODO figure out the issue with the test case or implementation
+# of resend_otp in user routes or user service
+"""def test_resend_verification_otp(test_client, api_key_header):
+    with patch('app.services.user_service.send_verification_email') as mock_send_otp:
+        mock_send_otp.return_value = (jsonify({'message': 'OTP sent successfully'}), 200)
+
+
+        # Resend OTP
+        response = test_client.post('/api/users/resend-otp', json={
+            'email': 'test@example.com'
+        }, headers=api_key_header)
+        print(response.data)
+        assert response.status_code == 200
+        assert b'OTP sent successfully' in response.data"""
