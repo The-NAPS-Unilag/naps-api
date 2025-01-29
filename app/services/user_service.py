@@ -4,9 +4,8 @@ import datetime
 import secrets
 from typing import Dict
 
-from flask import current_app, request, jsonify
+from flask import current_app, jsonify
 from flask_mail import Message
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 from app.extensions import db, mail
 from app.models.user import User
@@ -24,9 +23,28 @@ OTP_RESEND_COOLDOWN = datetime.timedelta(minutes=1)
 OTP_EXPIRY_TIME = datetime.timedelta(minutes=5)
 
 def generate_otp():
+    """
+    Generate a 6-digit OTP.
+
+    This function generates a 6-digit OTP using random digits.
+
+    Returns:
+        str: A 6-digit OTP.
+    """
     return ''.join(secrets.choice(string.digits) for _ in range(6))
 
 def validate_email_format(email: str) -> bool:
+    """
+    Validate the format of an email address.
+
+    This function uses the email_validator library to validate the format of an email address.
+
+    Args:
+        email (str): The email address to validate.
+
+    Returns:
+        bool: True if the email format is valid, False otherwise.
+    """
     try:
         validate_email(email)
         return True
@@ -34,6 +52,18 @@ def validate_email_format(email: str) -> bool:
         return False
 
 def send_verification_email(user):
+    """
+    Send a verification email with an OTP.
+
+    This function validates the email format, generates an OTP, and sends a verification email
+    to the user. It also handles OTP request limits and stores the OTP securely.
+
+    Args:
+        user (User): The user object to send the verification email to.
+
+    Returns:
+        Response: A JSON response indicating the result of the email sending process.
+    """
     try:
         # Validate email format
         if not validate_email_format(user.email):
@@ -88,6 +118,20 @@ def send_verification_email(user):
         return jsonify({'message': 'Email could not be sent'}), 500
 
 def verify_otp(email: str, otp: str) -> bool:
+    """
+    Verify an OTP for a given email address.
+
+    This function verifies if the provided OTP matches the stored OTP for the given email address
+    and if the OTP has not expired.
+
+    Args:
+        email (str): The email address to verify the OTP for.
+        otp (str): The OTP to verify.
+
+    Returns:
+        bool: True if the OTP is valid, False otherwise.
+    """
+
     # check if the otp is valid
     if email not in otp_store:
         return False
@@ -111,7 +155,15 @@ def verify_otp(email: str, otp: str) -> bool:
     return False
 
 def confirm_user_email(email: str, otp: str):
+    """
+    Confirm a user's email address.
 
+    This function sets the user's email confirmation status to True.
+
+    Args:
+        email (str): The email address to confirm.
+        otp (str): The OTP to verify.
+    """
     if verify_otp(email, otp):
         user = User.query.filter_by(email=email).first()
         if user:
@@ -140,6 +192,18 @@ def get_user_by_id(user_id):
 
 
 def user_exist(user_id):
+    """
+    Check if a user exists by user ID.
+
+    This function attempts to retrieve a user by their ID. If the user does not exist,
+    it returns a JSON response with an appropriate error message and status code.
+
+    Args:
+        user_id (int): The ID of the user to check.
+
+    Returns:
+        Response: A JSON response indicating whether the user was found or not.
+    """
     try:
         get_user_by_id(user_id)
     except BaseException:
@@ -147,6 +211,19 @@ def user_exist(user_id):
 
 
 def load_user(user_id):  # not all routes will need to have user_id. e.g creating User
+    """
+    Load a user by user ID.
+
+    This function attempts to load a user by their ID and serialize the user data.
+    If the user does not exist or an error occurs, it returns a JSON response with
+    an appropriate error message and status code.
+
+    Args:
+        user_id (int): The ID of the user to load.
+
+    Returns:
+        Response: A JSON response with the serialized user data or an error message.
+    """
     try:
         if (user_exist(user_id)):
             user = get_user_by_id(user_id)
@@ -158,6 +235,19 @@ def load_user(user_id):  # not all routes will need to have user_id. e.g creatin
 
 
 def dump_user(user_id):
+    """
+    Dump a user by user ID.
+
+    This function attempts to dump a user by their ID and serialize the user data.
+    If the user does not exist or an error occurs, it returns a JSON response with
+    an appropriate error message and status code.
+
+    Args:
+        user_id (int): The ID of the user to dump.
+
+    Returns:
+        Response: A JSON response with the serialized user data or an error message.
+    """
     try:
         if (user_exist(user_id)):
             user = get_user_by_id(user_id)
@@ -169,12 +259,37 @@ def dump_user(user_id):
 
 
 def filter_by_email(email):
+    """
+    Filter a user by email.
+
+    This function attempts to retrieve a user by their email address.
+
+    Args:
+        email (str): The email address of the user to filter by.
+
+    Returns:
+        User: The user object if found, otherwise None.
+    """
     user = User.query.filter_by(email=email).first()
 
     return user
 
 def create_user(email, current_level, matric_no, password):
+    """
+    Create a new user.
 
+    This function creates a new user with the provided email, current level, matriculation number,
+    and password.
+
+    Args:
+        email (str): The email address of the new user.
+        current_level (str): The current level of the new user.
+        matric_no (str): The matriculation number of the new user.
+        password (str): The password for the new user.
+
+    Returns:
+        User: The newly created user object.
+    """
     user_schema = UserSchema()
 
     new_user = User(
@@ -190,37 +305,20 @@ def create_user(email, current_level, matric_no, password):
     send_verification_email(new_user)
     return user_schema.dump(new_user)
 
-def confirm_user_email(email, otp):
-    if verify_otp(email, otp):
-        user = filter_by_email(email)
-        if user:
-            user.is_confirmed = True
-            user.confirmed_on = datetime.datetime.now()
-            db.session.commit()
-            return jsonify({'message': 'Email confirmed successfully'}), 200
-    return jsonify({'message': 'Invalid or expired OTP'}), 400
-
-def onboard_user(  # useless now, due to requirements chnages lol
-        user_id,
-        firstname,
-        secondname,
-        department,
-        current_level,
-        matric_no):
-
-    onboard_user = get_user_by_id(user_id)
-    onboard_user.onboard_details(
-        firstname,
-        secondname,
-        department,
-        current_level,
-        matric_no)
-
-    return onboard_user
-
-
 def edit_user(user_id, current_level, profile_picture):
+    """
+    Edit a user's details.
 
+    This function edits a user's details by updating the current level and profile picture.
+
+    Args:
+        user_id (int): The ID of the user to edit.
+        current_level (str): The new current level of the user.
+        profile_picture (str): The new profile picture URL of the user.
+
+    Returns:
+        User: The updated user object.
+    """
     edit_user = get_user_by_id(user_id)
     edit_user.update_details(current_level, profile_picture)
 
@@ -228,6 +326,18 @@ def edit_user(user_id, current_level, profile_picture):
 
 
 def delete_user(user_id):
+    """
+    Delete a user.
+
+    This function deletes a user by their ID.
+
+    Args:
+        user_id (int): The ID of the user to delete.
+
+    Returns:
+        Response: A JSON response indicating the result of the deletion process.
+
+    """
     try:
         if(user_exist(user_id)):
             with Session(db.engine) as session:
