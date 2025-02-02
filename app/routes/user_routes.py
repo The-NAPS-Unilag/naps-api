@@ -5,7 +5,9 @@ from app.services.user_service import( filter_by_email,
     create_user,
     edit_user,
     confirm_user_email,
-    send_verification_email
+    send_verification_email,
+    initiate_password_reset,
+    reset_password
 )
 from app.schemas.user_schema import UserSchema
 from app.extensions import db
@@ -197,7 +199,31 @@ def edit_existing_user(user_id):
 
     return jsonify({'message': 'Edited Successful'}), 200
 
+@user_bp.route('/users/forgot-password', methods=['POST'])
+@api_key_required
+def forget_user_password():
 
+    data = request.get_json()
+    email = data.get('email')
+
+    if not email:
+        return jsonify({'message': 'Email is required'}), 400
+
+    return initiate_password_reset(email)
+
+@user_bp.route('/users/reset-password', methods=['POST'])
+@api_key_required
+def reset_password_with_otp():
+
+    data = request.get_json()
+    email = data.get('email')
+    otp = data.get('otp')
+    new_password = data.get('new_password')
+
+    if not all([email, otp, new_password]):
+        return jsonify({'message': 'Email, OTP, and new password are required'}), 400
+
+    return reset_password(email, otp, new_password)
 
 @user_bp.route('/users/delete/<int:user_id>', methods=['DELETE'])
 @api_key_required

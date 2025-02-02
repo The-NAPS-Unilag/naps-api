@@ -132,6 +132,38 @@ def test_confirm_email(test_client, api_key_header):
         assert response.status_code == 200
         assert b'Email confirmed successfully' in response.data
 
+def test_forget_password(test_client, api_key_header):
+    with patch('app.services.user_service.send_verification_email') as mock_send_otp:
+        mock_send_otp.return_value = (jsonify({'message': 'OTP sent successfully'}), 200)
+
+        # Request password reset
+        response = test_client.post('/api/users/forgot-password', json={
+            'email': 'test@example.com'
+        }, headers=api_key_header)
+        assert response.status_code == 200
+        assert b'OTP sent successfully' in response.data
+
+def test_reset_password(test_client, api_key_header):
+    with patch('app.services.user_service.verify_otp') as mock_verify_otp:
+        mock_verify_otp.return_value = True
+
+        # Reset password
+        response = test_client.post('/api/users/reset-password', json={
+            'email': 'test@example.com',
+            'otp': '123456',
+            'new_password': 'newpassword'
+        }, headers=api_key_header)
+        assert response.status_code == 200
+        assert b'Password reset successful' in response.data
+
+        # Verify that the new password works
+        login_response = test_client.post('/api/users/login', json={
+            'email': 'test@example.com',
+            'password': 'newpassword'
+        }, headers=api_key_header)
+        assert login_response.status_code == 200
+        assert b'access_token' in login_response.data
+
 # TODO figure out the issue with the test case or implementation
 # of resend_otp in user routes or user service
 """def test_resend_verification_otp(test_client, api_key_header):
