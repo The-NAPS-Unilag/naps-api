@@ -324,6 +324,98 @@ def edit_user(user_id, current_level, profile_picture):
 
     return edit_user
 
+def initiate_password_reset(email: str):
+    """
+    Initiate a password reset process.
+
+    This function initiates a password reset process by sending a password reset OTP to the user's email address.
+
+    Args:
+        email (str): The email address of the user requesting a password reset.
+
+    Returns:
+        Response: A JSON response indicating the result of the password reset process.
+
+    """
+    user = filter_by_email(email)
+    if not user:
+        return jsonify({'message': 'Email not found'}), 404
+
+    try:
+
+        otp = generate_otp()
+        now = datetime.datetime.now()
+        hashed_otp = generate_password_hash(otp)
+
+        # Store OTP with reset flag
+        otp_store[email] = {
+            'hashed_otp': hashed_otp,
+            'expires_at': now + OTP_EXPIRY_TIME,
+            'request_count': otp_store.get(email, {}).get('request_count', 0) + 1,
+            'first_request_time': otp_store.get(email, {}).get('first_request_time', now),
+            'last_request_time': now,
+            'purpose': 'password_reset'  # Flag to identify password reset OTPs
+        }
+
+                # Send password reset email
+        msg = Message('Password Reset Request',
+                      sender=current_app.config['MAIL_USERNAME'],
+                      recipients=[email])
+
+        msg.html = f'''
+        <h2>Password Reset Request</h2>
+        <p>You have requested to reset your password.</p>
+        <p>Your password reset OTP is: <strong>{otp}</strong></p>
+        <p>This OTP will expire in {int(OTP_EXPIRY_TIME.total_seconds() // 60)} minutes.</p>
+        <p>If you did not request this reset, please ignore this email and ensure your account is secure.</p>
+        '''
+
+        mail.send(msg)
+
+        return jsonify({'message': 'Password reset OTP sent successfully'}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error generating OTP: {str(e)}")
+        return jsonify({'message': 'Error generating OTP'}), 500
+
+def reset_password(email: str, otp: str, new_password: str):
+    """
+
+    Reset a user's password.
+
+    This function resets a user's password using a valid OTP and the new password provided.
+
+    Args:
+        email (str): The email address of the user requesting a password reset.
+        otp (str): The OTP provided by the user for password reset.
+        new_password (str): The new password to set for the user.
+
+    Returns:
+        Response: A JSON response indicating the result of the password reset process.
+
+    """
+
+    if not verify_otp(email, otp):
+        return jsonify({'message': 'Invalid or expired OTP'}), 400
+
+
+    try:
+        user = filter_by_email(email)
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+
+        # Update password
+        user.hash_password(new_password)
+        db.session.commit()
+
+        # Clear any remaining OTP data
+        if email in otp_store:
+            del otp_store[email]
+
+        return jsonify({'message': 'Password reset successful'}), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Password reset failed: {str(e)}")
+        return jsonify({'message': 'Password reset failed'}), 500
 
 def delete_user(user_id):
     """
