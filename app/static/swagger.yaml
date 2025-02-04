@@ -1,0 +1,449 @@
+swagger: '2.0'
+info:
+  title: NAPS API
+  description: API for managing users, authentication, and admin tasks.
+  version: 1.0.0
+basePath: /api
+schemes:
+  - http
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+securityDefinitions:
+  ApiKeyAuth:
+    type: apiKey
+    in: header
+    name: x-api-key
+    description: API key for authentication
+  BearerAuth:
+    type: apiKey
+    in: header
+    name: Authorization
+    description: JWT token for authentication format -> Bearer <token>)
+paths:
+  /users:
+    get:
+      tags:
+        - Users
+      summary: List all users
+      description: Retrieve a paginated list of all users.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          type: integer
+          required: false
+          default: 1
+          description: Page number
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          default: 10
+          description: Number of items per page
+      responses:
+        200:
+          description: A list of users
+          schema:
+            type: object
+            properties:
+              users:
+                type: array
+                items:
+                  $ref: '#/definitions/User'
+              total:
+                type: integer
+              pages:
+                type: integer
+              current_page:
+                type: integer
+    post:
+      tags:
+        - Users
+      summary: Create a new user
+      description: Create a new user account.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/NewUser'
+      responses:
+        201:
+          description: User created successfully
+          schema:
+            $ref: '#/definitions/User'
+        400:
+          description: Invalid input
+  /users/{user_id}:
+    get:
+      tags:
+        - Users
+      summary: Get a user by ID
+      description: Retrieve a user by their ID.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the user to retrieve
+      responses:
+        200:
+          description: User found
+          schema:
+            $ref: '#/definitions/User'
+        404:
+          description: User not found
+    put:
+      tags:
+        - Users
+      summary: Update a user
+      description: Update an existing user's information.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the user to update
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/UpdateUser'
+      responses:
+        200:
+          description: User updated successfully
+        403:
+          description: Permission denied
+    delete:
+      tags:
+        - Users
+      summary: Delete a user
+      description: Delete an existing user.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the user to delete
+      responses:
+        200:
+          description: User deleted successfully
+        403:
+          description: Permission denied
+  /users/confirm:
+    post:
+      tags:
+        - Users
+      summary: Confirm user email
+      description: Confirm user email with OTP.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ConfirmEmail'
+      responses:
+        200:
+          description: Email confirmed successfully
+        400:
+          description: Invalid input
+  /users/resend-otp:
+    post:
+      tags:
+        - Users
+      summary: Resend verification OTP
+      description: Resend verification OTP to the user's email.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ResendOTP'
+      responses:
+        200:
+          description: OTP resent successfully
+        400:
+          description: Invalid input
+  /users/login:
+    post:
+      tags:
+        - Users
+      summary: User login
+      description: User login with email and password.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Login'
+      responses:
+        200:
+          description: Login successful
+          schema:
+            type: object
+            properties:
+              access_token:
+                type: string
+        401:
+          description: Invalid credentials
+  /users/login/matric:
+    post:
+      tags:
+        - Users
+      summary: User login with matric number
+      description: User login with matric number and password.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/LoginMatric'
+      responses:
+        200:
+          description: Login successful
+          schema:
+            type: object
+            properties:
+              access_token:
+                type: string
+        401:
+          description: Invalid credentials
+  /users/forgot-password:
+    post:
+      tags:
+        - Users
+      summary: Forgot password
+      description: Initiate password reset process.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ForgotPassword'
+      responses:
+        200:
+          description: Password reset initiated
+        400:
+          description: Invalid input
+  /users/reset-password:
+    post:
+      tags:
+        - Users
+      summary: Reset password
+      description: Reset password with OTP.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ResetPassword'
+      responses:
+        200:
+          description: Password reset successful
+        400:
+          description: Invalid input
+  /generate_api_key:
+    post:
+      tags:
+        - Auth
+      summary: Generate API key
+      description: Generate a new API key.
+      security:
+        - BearerAuth: []
+      responses:
+        201:
+          description: API key generated successfully
+          schema:
+            type: object
+            properties:
+              api_key:
+                type: string
+  /api_keys:
+    get:
+      tags:
+        - Auth
+      summary: List all API keys
+      description: Retrieve a list of all API keys.
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: A list of API keys
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/APIKey'
+  /api_keys/{api_key_id}:
+    delete:
+      tags:
+        - Auth
+      summary: Delete an API key
+      description: Delete an API key by its ID.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: api_key_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the API key to delete
+      responses:
+        200:
+          description: API key deleted successfully
+        404:
+          description: API key not found
+  /admin/create:
+    post:
+      tags:
+        - Admin
+      summary: Create admin user
+      description: Create a new admin user.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/NewAdmin'
+      responses:
+        201:
+          description: Admin user created successfully
+  /admin/login:
+    post:
+      tags:
+        - Admin
+      summary: Admin login
+      description: Admin login with email and password.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Login'
+      responses:
+        200:
+          description: Login successful
+          schema:
+            type: object
+            properties:
+              access_token:
+                type: string
+        401:
+          description: Invalid credentials
+definitions:
+  User:
+    type: object
+    properties:
+      id:
+        type: integer
+      email:
+        type: string
+      current_level:
+        type: string
+      matric_no:
+        type: string
+      profile_picture:
+        type: string
+  NewUser:
+    type: object
+    properties:
+      email:
+        type: string
+      current_level:
+        type: string
+      matric_no:
+        type: string
+      password:
+        type: string
+  UpdateUser:
+    type: object
+    properties:
+      current_level:
+        type: string
+      profile_picture:
+        type: string
+  ConfirmEmail:
+    type: object
+    properties:
+      email:
+        type: string
+      otp:
+        type: string
+  ResendOTP:
+    type: object
+    properties:
+      email:
+        type: string
+  Login:
+    type: object
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+  LoginMatric:
+    type: object
+    properties:
+      matric_no:
+        type: string
+      password:
+        type: string
+  ForgotPassword:
+    type: object
+    properties:
+      email:
+        type: string
+  ResetPassword:
+    type: object
+    properties:
+      email:
+        type: string
+      otp:
+        type: string
+      new_password:
+        type: string
+  APIKey:
+    type: object
+    properties:
+      id:
+        type: integer
+      key:
+        type: string
+  NewAdmin:
+    type: object
+    properties:
+      email:
+        type: string
+      password:
+        type: string
