@@ -5,6 +5,7 @@ from app.routes.user_routes import user_bp
 from app.routes.api_auth_routes import auth_bp
 from app.routes.admin_routes import admin_bp
 from decouple import config
+from flask_swagger_ui import get_swaggerui_blueprint
 
 
 def create_app(config_class='app.config.Development'):
@@ -21,5 +22,17 @@ def create_app(config_class='app.config.Development'):
     app.register_blueprint(admin_bp, url_prefix='/api')
     app.register_blueprint(user_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api')
+
+    # swagger setup
+    SWAGGER_URL = '/api/docs'
+    API_URL = '/static/swagger.yaml'
+    swaggerui_blueprint = get_swaggerui_blueprint(
+        SWAGGER_URL,
+        API_URL,
+        config={
+            'app_name': "NAPS API"
+        }
+    )
+    app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
     return app
