@@ -7,7 +7,6 @@ class Development:
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     JWT_SECRET_KEY = config('JWT_SECRET_KEY')
     # Mail Settings
-    MAIL_DEFAULT_SENDER = "noreply@flask.com"
     MAIL_SERVER = "smtp.gmail.com"
     MAIL_PORT = 465
     MAIL_USE_TLS = False
@@ -21,7 +20,6 @@ class Staging:
     SQLALCHEMY_DATABASE_URI = config('TEST_DATABASE_URI')
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     JWT_SECRET_KEY = config('JWT_SECRET_KEY')
-    MAIL_DEFAULT_SENDER = "noreply@flask.com"
     MAIL_SERVER = "smtp.gmail.com"
     MAIL_PORT = 465
     MAIL_USE_TLS = False
@@ -35,7 +33,6 @@ class Production:
     SECRET_KEY = config('PROD_SECRET_KEY')
     SQLALCHEMY_DATABASE_URI = config('PROD_DATABASE_URI')
     JWT_SECRET_KEY = config('JWT_SECRET_KEY')
-    MAIL_DEFAULT_SENDER = "noreply@flask.com"
     MAIL_SERVER = "smtp.gmail.com"
     MAIL_PORT = 465
     MAIL_USE_TLS = False
