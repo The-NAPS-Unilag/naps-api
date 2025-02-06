@@ -4,7 +4,7 @@ from app.extensions import db, ma, migrate, jwt, mail
 from app.routes.user_routes import user_bp
 from app.routes.api_auth_routes import auth_bp
 from app.routes.admin_routes import admin_bp
-from decouple import config
+from app.routes.hello import hello_bp
 from flask_swagger_ui import get_swaggerui_blueprint
 
 
@@ -19,6 +19,7 @@ def create_app(config_class='app.config.Development'):
     jwt.init_app(app)
     mail.init_app(app)
 
+    app.register_blueprint(hello_bp)
     app.register_blueprint(admin_bp, url_prefix='/api')
     app.register_blueprint(user_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api')
