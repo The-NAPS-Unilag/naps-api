@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_cors import CORS
 from app.config import Development, Staging, Production
 from app.extensions import db, ma, migrate, jwt, mail
 from app.routes.user_routes import user_bp
@@ -10,7 +11,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 
 def create_app(config_class='app.config.Development'):
     app = Flask(__name__)
-
+    CORS(app)
     app.config.from_object(config_class)
 
     db.init_app(app)
