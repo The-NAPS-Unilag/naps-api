@@ -57,7 +57,8 @@ def test_edit_existing_user(test_client, user_token_header):
         'api/users/update/1',
         json={
             "current_level": "300L",
-            "profile_picture": "https://pic.com/new_picture"
+            "profile_picture": "https://pic.com/new_picture",
+            "bio" : "I am a  UNILAG STUDENT"
         },
         headers=user_token_header)
     assert response.status_code == 200
