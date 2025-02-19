@@ -6,6 +6,7 @@ from app.routes.user_routes import user_bp
 from app.routes.api_auth_routes import auth_bp
 from app.routes.admin_routes import admin_bp
 from app.routes.hello import hello_bp
+from app.routes.event_routes import event_bp
 from flask_swagger_ui import get_swaggerui_blueprint
 
 
@@ -14,6 +15,7 @@ def create_app(config_class='app.config.Development'):
     CORS(app)
     app.config.from_object(config_class)
 
+    #from models import api_key, event, user
     db.init_app(app)
     ma.init_app(app)
     migrate.init_app(app, db)
@@ -24,6 +26,7 @@ def create_app(config_class='app.config.Development'):
     app.register_blueprint(admin_bp, url_prefix='/api')
     app.register_blueprint(user_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api')
+    app.register_blueprint(event_bp)
 
     # swagger setup
     SWAGGER_URL = '/api/docs'
