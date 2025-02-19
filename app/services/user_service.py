@@ -305,7 +305,7 @@ def create_user(email, current_level, matric_no, password):
     send_verification_email(new_user)
     return user_schema.dump(new_user)
 
-def edit_user(user_id, current_level, profile_picture):
+def edit_user(user_id, current_level, profile_picture, bio):
     """
     Edit a user's details.
 
@@ -315,12 +315,13 @@ def edit_user(user_id, current_level, profile_picture):
         user_id (int): The ID of the user to edit.
         current_level (str): The new current level of the user.
         profile_picture (str): The new profile picture URL of the user.
+        bio (str): The bio of the user
 
     Returns:
         User: The updated user object.
     """
     edit_user = get_user_by_id(user_id)
-    edit_user.update_details(current_level, profile_picture)
+    edit_user.update_details(current_level, profile_picture, bio)
 
     return edit_user
 

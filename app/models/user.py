@@ -16,6 +16,7 @@ class User(db.Model):
 
     profile_picture = db.Column(db.String(256), nullable=True)
 
+    bio = db.Column(db.String(500),nullable=True)
     created_on = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     is_admin = db.Column(db.Boolean, default=False) # Admins
@@ -50,9 +51,10 @@ class User(db.Model):
 
         db.session.commit()
 
-    def update_details(self, current_level, profile_picture):
+    def update_details(self, current_level, profile_picture, bio):
 
         self.current_level = current_level
         self.profile_picture = profile_picture
+        self.bio = bio
 
         db.session.commit()

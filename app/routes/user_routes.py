@@ -190,11 +190,13 @@ def edit_existing_user(user_id):
 
     current_level = data['current_level']
     profile_picture = data['profile_picture']
+    bio = data['bio']
 
     edit_user(
         current_user_id,
         current_level,
-        profile_picture
+        profile_picture,
+        bio
     )
 
     return jsonify({'message': 'Edited Successful'}), 200
