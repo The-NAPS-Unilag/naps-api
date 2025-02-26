@@ -15,7 +15,7 @@ class User(db.Model):
     matric_no = db.Column(db.String(50), unique=True, nullable=True)
 
     profile_picture = db.Column(db.String(256), nullable=True)
-
+    departmental_fees = db.Column(db.String(256), nullable=True)
     bio = db.Column(db.String(500),nullable=True)
     created_on = db.Column(db.DateTime, default=db.func.current_timestamp())
 
