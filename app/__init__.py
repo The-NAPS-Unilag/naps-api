@@ -1,6 +1,5 @@
 from flask import Flask
 from flask_cors import CORS
-from flask_socketio import SocketIO
 from app.extensions import db, ma, migrate, jwt, mail
 from app.routes.user_routes import user_bp
 from app.routes.api_auth_routes import auth_bp
@@ -9,10 +8,9 @@ from app.routes.hello import hello_bp
 from app.routes.event_routes import event_bp
 from app.routes.resource_routes import resource_bp
 from app.routes.forum_routes import forum_bp
+from app.socketio import socketio
 
 from flask_swagger_ui import get_swaggerui_blueprint
-
-socketio = SocketIO()
 
 def create_app(config_class='app.config.Development'):
     app = Flask(__name__)

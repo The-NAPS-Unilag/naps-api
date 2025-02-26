@@ -90,7 +90,7 @@ def create_new_user():
     data = request.get_json()
 
     # Validate input
-    required_fields = ['email', 'current_level', 'matric_no', 'password']
+    required_fields = ['firstname', 'lastname', 'email', 'current_level', 'matric_no', 'password']
     for field in required_fields:
         if field not in data:
             return jsonify({'message': f'{field} is required'}), 400
