@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_socketio import emit, join_room, leave_room
 from app.services.forum_service import ForumService
 from app.models.user import User
-from app import socketio
+from app.socketio import socketio
 from app.decorators.api_decorator import api_key_required
 from app.decorators.admin_decorator import admin_required
 
