@@ -80,6 +80,7 @@ def get_resources_by_level(level):
     ]), HTTPStatus.OK
 
 @resource_bp.route('/pending', methods=['GET'])
+@api_key_required
 @jwt_required()
 @admin_required
 def get_pending_resources():
@@ -93,6 +94,7 @@ def get_pending_resources():
     ]), HTTPStatus.OK
 
 @resource_bp.route('/<int:resource_id>/approve', methods=['POST'])
+@api_key_required
 @jwt_required()
 @admin_required
 def approve_resource(resource_id):
@@ -107,6 +109,7 @@ def approve_resource(resource_id):
     }), HTTPStatus.OK
 
 @resource_bp.route('/<int:resource_id>', methods=['DELETE'])
+@api_key_required
 @jwt_required()
 @admin_required
 def delete_resource(resource_id):
