@@ -97,10 +97,13 @@ def create_new_user():
 
     try:
         new_user = create_user(
+            data['firstname'],
+            data['lastname'],
             data['email'],
             data['current_level'],
             data['matric_no'],
             data['password']
+            # departmental fees
         )
         return new_user, 201
     except Exception as e:
