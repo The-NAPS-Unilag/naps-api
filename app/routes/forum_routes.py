@@ -5,16 +5,43 @@ from app.services.forum_service import ForumService
 from app.models.user import User
 from app import socketio
 from app.decorators.api_decorator import api_key_required
+from app.decorators.admin_decorator import admin_required
 
 forum_bp = Blueprint('forum', __name__, url_prefix='/api/forums')
 
-# REST API Endpoints
 @forum_bp.route('/', methods=['GET'])
 @api_key_required
 def get_all_forums():
     """Get all forums."""
     forums = ForumService.get_all_forums()
     return jsonify([forum.to_dict() for forum in forums]), 200
+
+@forum_bp.route('/', methods=['POST'])
+@api_key_required
+@jwt_required()
+@admin_required
+def create_forum():
+    """Create a new forum."""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user or not user.is_admin:  # Only admins can create forums
+        return jsonify({'message': 'Unauthorized. Only admins can create forums.'}), 403
+
+    data = request.get_json()
+    required_fields = ['name', 'description']
+    if not all(field in data for field in required_fields):
+        return jsonify({'message': 'Missing required fields: name and description.'}), 400
+
+    forum = ForumService.create_forum(
+        name=data['name'],
+        description=data['description'],
+        is_general=data.get('is_general', False)
+    )
+
+    return jsonify({
+        'message': 'Forum created successfully.',
+        'forum': forum.to_dict()
+    }), 201
 
 @forum_bp.route('/<int:forum_id>/join', methods=['POST'])
 @api_key_required
