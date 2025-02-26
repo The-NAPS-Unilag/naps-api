@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
-from app.config import Development, Staging, Production
+from flask_socketio import SocketIO
 from app.extensions import db, ma, migrate, jwt, mail
 from app.routes.user_routes import user_bp
 from app.routes.api_auth_routes import auth_bp
@@ -8,8 +8,11 @@ from app.routes.admin_routes import admin_bp
 from app.routes.hello import hello_bp
 from app.routes.event_routes import event_bp
 from app.routes.resource_routes import resource_bp
+from app.routes.forum_routes import forum_bp
+
 from flask_swagger_ui import get_swaggerui_blueprint
 
+socketio = SocketIO()
 
 def create_app(config_class='app.config.Development'):
     app = Flask(__name__)
@@ -29,6 +32,7 @@ def create_app(config_class='app.config.Development'):
     app.register_blueprint(auth_bp, url_prefix='/api')
     app.register_blueprint(event_bp)
     app.register_blueprint(resource_bp)
+    app.register_blueprint(forum_bp)
 
     # swagger setup
     SWAGGER_URL = '/api/docs'
@@ -42,4 +46,5 @@ def create_app(config_class='app.config.Development'):
     )
     app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
+    socketio.init_app(app, cors_allowed_origins="*")
     return app
