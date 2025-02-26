@@ -3,6 +3,18 @@ from app.extensions import db
 
 class ForumService:
     @staticmethod
+    def create_forum(name, description, is_general=False):
+        """Create a new forum."""
+        forum = Forum(
+            name=name,
+            description=description,
+            is_general=is_general
+        )
+        db.session.add(forum)
+        db.session.commit()
+        return forum
+
+    @staticmethod
     def get_all_forums():
         """Retrieve all forums."""
         return Forum.query.all()
