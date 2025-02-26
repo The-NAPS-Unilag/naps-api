@@ -21,7 +21,7 @@ securityDefinitions:
     type: apiKey
     in: header
     name: Authorization
-    description: JWT token for authentication format -> Bearer <token>)
+    description: JWT token for authentication format -> Bearer <token>
 paths:
   /users:
     get:
@@ -103,49 +103,6 @@ paths:
             $ref: '#/definitions/User'
         404:
           description: User not found
-    put:
-      tags:
-        - Users
-      summary: Update a user
-      description: Update an existing user's information.
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-      parameters:
-        - name: user_id
-          in: path
-          type: integer
-          required: true
-          description: ID of the user to update
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/UpdateUser'
-      responses:
-        200:
-          description: User updated successfully
-        403:
-          description: Permission denied
-    delete:
-      tags:
-        - Users
-      summary: Delete a user
-      description: Delete an existing user.
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-      parameters:
-        - name: user_id
-          in: path
-          type: integer
-          required: true
-          description: ID of the user to delete
-      responses:
-        200:
-          description: User deleted successfully
-        403:
-          description: Permission denied
   /users/confirm:
     post:
       tags:
@@ -270,61 +227,484 @@ paths:
           description: Password reset successful
         400:
           description: Invalid input
-  /generate_api_key:
-    post:
+  /users/update/{user_id}:
+    put:
       tags:
-        - Auth
-      summary: Generate API key
-      description: Generate a new API key.
+        - Users
+      summary: Update an existing user
+      description: Update an existing user's information.
       security:
-        - BearerAuth: []
-      responses:
-        201:
-          description: API key generated successfully
-          schema:
-            type: object
-            properties:
-              api_key:
-                type: string
-  /api_keys:
-    get:
-      tags:
-        - Auth
-      summary: List all API keys
-      description: Retrieve a list of all API keys.
-      security:
-        - BearerAuth: []
-      responses:
-        200:
-          description: A list of API keys
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/APIKey'
-  /api_keys/{api_key_id}:
-    delete:
-      tags:
-        - Auth
-      summary: Delete an API key
-      description: Delete an API key by its ID.
-      security:
+        - ApiKeyAuth: []
         - BearerAuth: []
       parameters:
-        - name: api_key_id
+        - name: user_id
           in: path
           type: integer
           required: true
-          description: ID of the API key to delete
+          description: ID of the user to update
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/UpdateUser'
       responses:
         200:
-          description: API key deleted successfully
+          description: User updated successfully
+        403:
+          description: Permission denied
+  /users/delete/{user_id}:
+    delete:
+      tags:
+        - Users
+      summary: Delete a user
+      description: Delete an existing user.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the user to delete
+      responses:
+        200:
+          description: User deleted successfully
+        403:
+          description: Permission denied
+  /resources:
+    post:
+      tags:
+        - Resources
+      summary: Upload a new resource
+      description: Upload a new resource file.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      consumes:
+        - multipart/form-data
+      parameters:
+        - name: file
+          in: formData
+          type: file
+          required: true
+          description: The resource file to upload.
+        - name: title
+          in: formData
+          type: string
+          required: true
+          description: Title of the resource.
+        - name: author
+          in: formData
+          type: string
+          required: true
+          description: Author of the resource.
+        - name: course_title
+          in: formData
+          type: string
+          required: true
+          description: Title of the course the resource belongs to.
+        - name: level
+          in: formData
+          type: string
+          required: true
+          description: Academic level of the resource.
+        - name: contributors
+          in: formData
+          type: array
+          items:
+            type: string
+          required: false
+          description: List of contributors (optional).
+      responses:
+        201:
+          description: Resource uploaded successfully
+          schema:
+            $ref: '#/definitions/Resource'
+        400:
+          description: Invalid input or missing fields
+        500:
+          description: Internal server error
+  /resources/level/{level}:
+    get:
+      tags:
+        - Resources
+      summary: Get resources by level
+      description: Retrieve all approved resources for a specific academic level.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: level
+          in: path
+          type: string
+          required: true
+          description: Academic level to filter resources by.
+      responses:
+        200:
+          description: List of resources for the specified level
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Resource'
+        500:
+          description: Internal server error
+  /resources/pending:
+    get:
+      tags:
+        - Resources
+      summary: Get pending resources
+      description: Retrieve all resources pending approval (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        200:
+          description: List of pending resources
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Resource'
+        403:
+          description: Permission denied (non-admin access)
+        500:
+          description: Internal server error
+  /resources/{resource_id}/approve:
+    post:
+      tags:
+        - Resources
+      summary: Approve a resource
+      description: Approve a pending resource (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: resource_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the resource to approve.
+      responses:
+        200:
+          description: Resource approved successfully
+          schema:
+            $ref: '#/definitions/Resource'
+        400:
+          description: Invalid resource ID or already approved
+        403:
+          description: Permission denied (non-admin access)
+        500:
+          description: Internal server error
+  /resources/{resource_id}:
+    delete:
+      tags:
+        - Resources
+      summary: Delete a resource
+      description: Delete a resource and its associated file (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: resource_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the resource to delete.
+      responses:
+        200:
+          description: Resource deleted successfully
+        400:
+          description: Invalid resource ID
+        403:
+          description: Permission denied (non-admin access)
+        500:
+          description: Internal server error
+  /forums:
+    get:
+      tags:
+        - Forums
+      summary: Get all forums
+      description: Retrieve a list of all forums.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: List of forums
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Forum'
+    post:
+      tags:
+        - Forums
+      summary: Create a new forum
+      description: Create a new forum (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/NewForum'
+      responses:
+        201:
+          description: Forum created successfully
+          schema:
+            $ref: '#/definitions/Forum'
+        400:
+          description: Missing required fields
+        403:
+          description: Unauthorized (non-admin access)
+  /forums/{forum_id}/join:
+    post:
+      tags:
+        - Forums
+      summary: Join a forum
+      description: Join a specific forum.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: forum_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the forum to join.
+      responses:
+        200:
+          description: Successfully joined the forum
+        400:
+          description: Unable to join the forum
+  /forums/{forum_id}/threads:
+    post:
+      tags:
+        - Forums
+      summary: Create a new thread
+      description: Create a new thread in a forum.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: forum_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the forum to create the thread in.
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/NewThread'
+      responses:
+        201:
+          description: Thread created successfully
+          schema:
+            $ref: '#/definitions/Thread'
+        400:
+          description: Missing required fields
+  /forums/threads/{thread_id}/messages:
+    post:
+      tags:
+        - Forums
+      summary: Send a message in a thread
+      description: Send a message in a specific thread.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: thread_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the thread to send the message in.
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/NewMessage'
+      responses:
+        201:
+          description: Message sent successfully
+          schema:
+            $ref: '#/definitions/Message'
+        400:
+          description: Missing required fields
+    get:
+      tags:
+        - Forums
+      summary: Get thread messages
+      description: Retrieve all messages in a specific thread.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: thread_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the thread to retrieve messages from.
+      responses:
+        200:
+          description: List of messages in the thread
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Message'
+  /forums/messages/{message_id}/like:
+    post:
+      tags:
+        - Forums
+      summary: Like a message
+      description: Like a specific message in a thread.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: message_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the message to like.
+      responses:
+        200:
+          description: Message liked successfully
+          schema:
+            $ref: '#/definitions/Message'
         404:
-          description: API key not found
+          description: Message not found
+  /events:
+    get:
+      tags:
+        - Events
+      summary: Get all events
+      description: Retrieve a list of all approved events.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        200:
+          description: List of events
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Event'
+        500:
+          description: Internal server error
+    post:
+      tags:
+        - Events
+      summary: Create a new event
+      description: Create a new event.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/NewEvent'
+      responses:
+        201:
+          description: Event created successfully
+          schema:
+            $ref: '#/definitions/Event'
+        400:
+          description: Invalid input data
+        500:
+          description: Internal server error
+  /events/{event_id}:
+    get:
+      tags:
+        - Events
+      summary: Get event details
+      description: Retrieve details of a specific event.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: event_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the event to retrieve.
+      responses:
+        200:
+          description: Event details
+          schema:
+            $ref: '#/definitions/Event'
+        404:
+          description: Event not found
+  /events/{event_id}/rsvp:
+    post:
+      tags:
+        - Events
+      summary: RSVP to an event
+      description: RSVP to a specific event.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: event_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the event to RSVP to.
+      responses:
+        200:
+          description: RSVP successful
+        400:
+          description: Unable to RSVP
+  /events/{event_id}/cancel_rsvp:
+    post:
+      tags:
+        - Events
+      summary: Cancel RSVP
+      description: Cancel an RSVP for a specific event.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: event_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the event to cancel RSVP for.
+      responses:
+        200:
+          description: RSVP cancelled successfully
+        400:
+          description: Unable to cancel RSVP
+  /events/type/{event_type}:
+    get:
+      tags:
+        - Events
+      summary: Get events by type
+      description: Retrieve events filtered by type.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: event_type
+          in: path
+          type: string
+          required: true
+          description: Type of events to retrieve.
+      responses:
+        200:
+          description: List of events filtered by type
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Event'
+        500:
+          description: Internal server error
   /admin/create:
     post:
       tags:
         - Admin
-      summary: Create admin user
+      summary: Create an admin user
       description: Create a new admin user.
       security:
         - ApiKeyAuth: []
@@ -337,12 +717,16 @@ paths:
       responses:
         201:
           description: Admin user created successfully
+          schema:
+            $ref: '#/definitions/Admin'
+        400:
+          description: Invalid input
   /admin/login:
     post:
       tags:
         - Admin
       summary: Admin login
-      description: Admin login with email and password.
+      description: Authenticate an admin user and return an access token.
       security:
         - ApiKeyAuth: []
       parameters:
@@ -350,7 +734,7 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/Login'
+            $ref: '#/definitions/AdminLogin'
       responses:
         200:
           description: Login successful
@@ -361,12 +745,90 @@ paths:
                 type: string
         401:
           description: Invalid credentials
+  /generate_api_key:
+    post:
+      tags:
+        - Auth
+      summary: Generate API key
+      description: Generate a new API key (admin only).
+      security:
+        - BearerAuth: []
+      responses:
+        201:
+          description: API key generated successfully
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              api_key:
+                type: string
+        403:
+          description: Permission denied (non-admin access)
+  /test_generate_api_key:
+    post:
+      tags:
+        - Auth
+      summary: Test generate API key
+      description: Generate a new API key for testing purposes (no authentication required).
+      responses:
+        201:
+          description: Test API key generated successfully
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              api_key:
+                type: string
+  /api_keys:
+    get:
+      tags:
+        - Auth
+      summary: List all API keys
+      description: Retrieve a list of all API keys (admin only).
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: List of API keys
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/APIKey'
+        403:
+          description: Permission denied (non-admin access)
+  /api_keys/{api_key_id}:
+    delete:
+      tags:
+        - Auth
+      summary: Delete an API key
+      description: Delete an API key by its ID (admin only).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: api_key_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the API key to delete.
+      responses:
+        200:
+          description: API key deleted successfully
+        404:
+          description: API key not found
+        403:
+          description: Permission denied (non-admin access)
 definitions:
   User:
     type: object
     properties:
       id:
         type: integer
+      firstname:
+        type: string
+      lastname:
+        type: string
       email:
         type: string
       current_level:
@@ -375,9 +837,15 @@ definitions:
         type: string
       profile_picture:
         type: string
+      bio:
+        type: string
   NewUser:
     type: object
     properties:
+      firstname:
+        type: string
+      lastname:
+        type: string
       email:
         type: string
       current_level:
@@ -392,6 +860,8 @@ definitions:
       current_level:
         type: string
       profile_picture:
+        type: string
+      bio:
         type: string
   ConfirmEmail:
     type: object
@@ -433,13 +903,143 @@ definitions:
         type: string
       new_password:
         type: string
-  APIKey:
+  Resource:
     type: object
     properties:
       id:
         type: integer
-      key:
+      title:
         type: string
+      author:
+        type: string
+      course_title:
+        type: string
+      level:
+        type: string
+      file_url:
+        type: string
+      contributors:
+        type: array
+        items:
+          type: string
+      uploaded_by:
+        type: integer
+      is_approved:
+        type: boolean
+      created_at:
+        type: string
+        format: date-time
+  Forum:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      description:
+        type: string
+      is_general:
+        type: boolean
+      created_at:
+        type: string
+        format: date-time
+  NewForum:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      is_general:
+        type: boolean
+  Thread:
+    type: object
+    properties:
+      id:
+        type: integer
+      title:
+        type: string
+      forum_id:
+        type: integer
+      user_id:
+        type: integer
+      created_at:
+        type: string
+        format: date-time
+  NewThread:
+    type: object
+    properties:
+      title:
+        type: string
+  Message:
+    type: object
+    properties:
+      id:
+        type: integer
+      content:
+        type: string
+      thread_id:
+        type: integer
+      user_id:
+        type: integer
+      parent_message_id:
+        type: integer
+      likes:
+        type: integer
+      created_at:
+        type: string
+        format: date-time
+  NewMessage:
+    type: object
+    properties:
+      content:
+        type: string
+      parent_message_id:
+        type: integer
+  Event:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      description:
+        type: string
+      date:
+        type: string
+        format: date
+      time:
+        type: string
+        format: time
+      location:
+        type: string
+      event_type:
+        type: string
+      capacity:
+        type: integer
+      rsvp_count:
+        type: integer
+      is_open_for_registration:
+        type: boolean
+  NewEvent:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      date:
+        type: string
+        format: date
+      time:
+        type: string
+        format: time
+      location:
+        type: string
+      event_type:
+        type: string
+      capacity:
+        type: integer
   NewAdmin:
     type: object
     properties:
@@ -447,3 +1047,28 @@ definitions:
         type: string
       password:
         type: string
+  AdminLogin:
+    type: object
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+  Admin:
+    type: object
+    properties:
+      id:
+        type: integer
+      email:
+        type: string
+  APIKey:
+    type: object
+    properties:
+      id:
+        type: integer
+      key:
+        type: string
+      created_at:
+        type: string
+        format: date-time
+
