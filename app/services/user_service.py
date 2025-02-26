@@ -17,11 +17,11 @@ from sqlalchemy.orm import Session
 
 # OTP Configuration
 otp_store: Dict[str, Dict] = {}
-OTP_REQUEST_LIMIT = 5
+OTP_REQUEST_LIMIT = 3
 OTP_REQUEST_WINDOW = datetime.timedelta(minutes=15)
 OTP_RESEND_COOLDOWN = datetime.timedelta(minutes=1)
 OTP_EXPIRY_TIME = datetime.timedelta(minutes=5)
-
+# PASSWORD_RESET_EXPIRY_TIME =
 def generate_otp():
     """
     Generate a 6-digit OTP.
@@ -274,7 +274,7 @@ def filter_by_email(email):
 
     return user
 
-def create_user(email, current_level, matric_no, password):
+def create_user(firstname, lastname, email, current_level, matric_no, password):
     """
     Create a new user.
 
@@ -293,6 +293,8 @@ def create_user(email, current_level, matric_no, password):
     user_schema = UserSchema()
 
     new_user = User(
+        firstname=firstname,
+        lastname=lastname,
         email=email,
         current_level=current_level,
         matric_no=matric_no,

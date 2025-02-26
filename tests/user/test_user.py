@@ -7,6 +7,8 @@ def test_user_signup(test_client, api_key_header):
         mock_send_otp.return_value = (jsonify({'message': 'OTP sent successfully'}), 200)
 
         response = test_client.post('/api/users', json={
+            'firstname': 'olaoluwa',
+            'lastname': 'lastname',
             'email': 'test@example.com',
             'password': 'testpassword',
             'current_level': '100L',
@@ -91,6 +93,8 @@ def test_delete_existing_user(test_client, api_key_header):
 
         # Create a new user to delete
         response = test_client.post('/api/users', json={
+            'firstname': 'firstname',
+            'lastname': 'lastname',
             'email': 'deletetest@example.com',
             'password': 'testpassword',
             'current_level': '100L',
