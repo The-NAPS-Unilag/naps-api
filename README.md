@@ -1,4 +1,4 @@
-# API Routes Documentation
+# NAPS API DOCS
 
 This document outlines all available API routes in the project, organized by user role and resource type.
 
