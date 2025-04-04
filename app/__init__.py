@@ -8,6 +8,8 @@ from app.routes.hello import hello_bp
 from app.routes.event_routes import event_bp
 from app.routes.resource_routes import resource_bp
 from app.routes.forum_routes import forum_bp
+from app.routes.mentorship import mentorship_bp
+
 from app.socketio import socketio
 
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -31,6 +33,7 @@ def create_app(config_class='app.config.Development'):
     app.register_blueprint(event_bp)
     app.register_blueprint(resource_bp)
     app.register_blueprint(forum_bp)
+    app.register_blueprint(mentorship_bp)
 
     # swagger setup
     SWAGGER_URL = '/api/docs'
