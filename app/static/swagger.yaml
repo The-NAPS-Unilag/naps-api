@@ -819,6 +819,270 @@ paths:
           description: API key not found
         403:
           description: Permission denied (non-admin access)
+  /mentorship/apply:
+    post:
+      tags:
+        - Mentorship
+      summary: Apply for mentorship
+      description: Apply for mentorship as a student.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/MentorshipApplication'
+      responses:
+        201:
+          description: Application submitted successfully
+          schema:
+            $ref: '#/definitions/MentorshipApplicationResponse'
+        400:
+          description: Missing required fields
+        500:
+          description: Internal server error
+  /mentorship/apply-mentor:
+    post:
+      tags:
+        - Mentorship
+      summary: Apply to be mentor
+      description: Apply to become a mentor.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/MentorApplication'
+      responses:
+        201:
+          description: Application submitted successfully
+          schema:
+            $ref: '#/definitions/MentorApplicationResponse'
+        400:
+          description: Missing required fields or invalid data
+        500:
+          description: Internal server error
+  /mentorship/applications:
+    get:
+      tags:
+        - Mentorship
+      summary: Get pending applications
+      description: Get pending mentorship applications (Admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        200:
+          description: List of pending applications
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MentorshipApplicationResponse'
+        403:
+          description: Unauthorized access
+  /mentorship/mentor-applications:
+    get:
+      tags:
+        - Mentorship
+      summary: Get pending mentor applications
+      description: Get pending mentor applications (Admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        200:
+          description: List of pending mentor applications
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MentorApplicationResponse'
+        403:
+          description: Unauthorized access
+  /mentorship/mentor-applications/{application_id}/approve:
+    post:
+      tags:
+        - Mentorship
+      summary: Approve mentor application
+      description: Approve a mentor application (Admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: application_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: Application approved
+          schema:
+            $ref: '#/definitions/MentorApplicationResponse'
+        400:
+          description: Invalid application
+        403:
+          description: Unauthorized access
+  /mentorship/mentor-applications/{application_id}/reject:
+    post:
+      tags:
+        - Mentorship
+      summary: Reject mentor application
+      description: Reject a mentor application (Admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: application_id
+          in: path
+          type: integer
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              reason:
+                type: string
+      responses:
+        200:
+          description: Application rejected
+          schema:
+            $ref: '#/definitions/MentorApplicationResponse'
+        400:
+          description: Missing reason or invalid application
+        403:
+          description: Unauthorized access
+  /mentorship/assign-mentor:
+    post:
+      tags:
+        - Mentorship
+      summary: Assign mentor
+      description: Assign a mentor to a student (Admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/MentorAssignment'
+      responses:
+        201:
+          description: Mentor assigned successfully
+          schema:
+            $ref: '#/definitions/MentorshipRelationship'
+        400:
+          description: Missing required fields or invalid data
+        403:
+          description: Unauthorized access
+  /mentorship/schedule-session:
+    post:
+      tags:
+        - Mentorship
+      summary: Schedule session
+      description: Schedule a mentorship session.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/SessionSchedule'
+      responses:
+        201:
+          description: Session scheduled successfully
+          schema:
+            $ref: '#/definitions/MentorshipSession'
+        400:
+          description: Missing required fields or invalid data
+  /mentorship/submit-feedback:
+    post:
+      tags:
+        - Mentorship
+      summary: Submit feedback
+      description: Submit feedback for a session.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/SessionFeedback'
+      responses:
+        201:
+          description: Feedback submitted successfully
+          schema:
+            $ref: '#/definitions/SessionFeedbackResponse'
+        400:
+          description: Missing required fields
+  /mentorship/my-mentorships:
+    get:
+      tags:
+        - Mentorship
+      summary: Get my mentorships
+      description: Get user's mentorship relationships.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        200:
+          description: User's mentorship relationships
+          schema:
+            $ref: '#/definitions/UserMentorships'
+  /mentorship/mentorships/{mentorship_id}/sessions:
+    get:
+      tags:
+        - Mentorship
+      summary: Get mentorship sessions
+      description: Get all sessions for a mentorship.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: mentorship_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: List of sessions
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MentorshipSession'
+        403:
+          description: Unauthorized access
+  /mentorship/mentorships/{mentorship_id}/complete:
+    post:
+      tags:
+        - Mentorship
+      summary: Complete mentorship
+      description: Mark a mentorship as completed.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: mentorship_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: Mentorship completed
+          schema:
+            $ref: '#/definitions/MentorshipRelationship'
+        403:
+          description: Unauthorized access
 definitions:
   User:
     type: object
@@ -1071,4 +1335,154 @@ definitions:
       created_at:
         type: string
         format: date-time
+  MentorshipApplication:
+    type: object
+    properties:
+      matric_no:
+        type: string
+      level:
+        type: string
+      areas_of_interest:
+        type: array
+        items:
+          type: string
+  MentorApplication:
+    type: object
+    properties:
+      phone_no:
+        type: string
+      academic_background:
+        type: string
+      area_of_expertise:
+        type: string
+      preferred_mode:
+        type: string
+  MentorAssignment:
+    type: object
+    properties:
+      mentorship_application_id:
+        type: integer
+      mentor_id:
+        type: integer
+  SessionSchedule:
+    type: object
+    properties:
+      mentorship_id:
+        type: integer
+      scheduled_time:
+        type: string
+        format: date-time
+      duration:
+        type: integer
+      notes:
+        type: string
 
+  SessionFeedback:
+    type: object
+    properties:
+      session_id:
+        type: integer
+      rating:
+        type: integer
+      comments:
+        type: string
+  MentorshipApplicationResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+      student_id:
+        type: integer
+      matric_no:
+        type: string
+      level:
+        type: string
+      areas_of_interest:
+        type: array
+        items:
+          type: string
+      status:
+        type: string
+      created_at:
+        type: string
+        format: date-time
+  MentorApplicationResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+      applicant_id:
+        type: integer
+      phone_no:
+        type: string
+      academic_background:
+        type: string
+      area_of_expertise:
+        type: string
+      preferred_mode:
+        type: string
+      status:
+        type: string
+      created_at:
+        type: string
+        format: date-time
+  MentorshipRelationship:
+    type: object
+    properties:
+      id:
+        type: integer
+      mentor_id:
+        type: integer
+      mentee_id:
+        type: integer
+      status:
+        type: string
+      start_date:
+        type: string
+        format: date-time
+      end_date:
+        type: string
+        format: date-time
+  MentorshipSession:
+    type: object
+    properties:
+      id:
+        type: integer
+      mentorship_id:
+        type: integer
+      scheduled_time:
+        type: string
+        format: date-time
+      duration:
+        type: integer
+      notes:
+        type: string
+      status:
+        type: string
+  SessionFeedbackResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+      session_id:
+        type: integer
+      user_id:
+        type: integer
+      rating:
+        type: integer
+      comments:
+        type: string
+      created_at:
+        type: string
+        format: date-time
+  UserMentorships:
+    type: object
+    properties:
+      as_mentor:
+        type: array
+        items:
+          $ref: '#/definitions/MentorshipRelationship'
+      as_mentee:
+        type: array
+        items:
+          $ref: '#/definitions/MentorshipRelationship'
