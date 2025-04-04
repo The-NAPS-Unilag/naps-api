@@ -1,90 +1,106 @@
-# naps-api
+# API Routes Documentation
 
-Microservices for the NAPS application.
+This document outlines all available API routes in the project, organized by user role and resource type.
 
-### Installation
+## Table of Contents
+- [Overview](#overview)
+- [Authentication & Authorization](#authentication--authorization)
+- [User Routes](#user-routes)
+- [Event Routes](#event-routes)
+- [Resource Routes](#resource-routes)
+- [Forum Routes](#forum-routes)
+- [Mentorship Routes](#mentorship-routes)
+- [Admin Routes](#admin-routes)
 
-1. Clone the repository:
-    ```sh
-    git clone https://github.com/The-NAPS-Unilag/naps-api.git
-    cd naps-api
-    ```
+## Overview
 
-2. Create and activate a virtual environment:
-    ```sh
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
+All API routes begin with `/api` prefix. The API uses JWT authentication and requires API keys for most operations.
 
-3. Install the dependencies:
-    ```sh
-    pip install -r requirements.txt
-    ```
+## Authentication & Authorization
 
-### Database Setup  (if you use the .env i gave, skip the db setup)
+### API Keys
+| Method | Route | Role | Description |
+|--------|-------|------|-------------|
+| POST | `/generate_api_key` | Admin | Generate a new API key |
+| POST | `/test_generate_api_key` | Any | Generate a test API key (development only) |
+| GET | `/api_keys` | Admin | List all API keys |
+| DELETE | `/api_keys/<api_key_id>` | Admin | Delete an API key |
 
-1. Initialize the database:
-    ```sh
-    flask db init
-    ```
+## User Routes
 
-2. Apply migrations:
-    ```sh
-    flask db migrate -m "Initial migration"
-    flask db upgrade
-    ```
+| Method | Route | Role | Description |
+|--------|-------|------|-------------|
+| POST | `/users` | Any | Create a new user account |
+| POST | `/users/login` | Any | User login with email and password |
+| POST | `/users/login/matric` | Any | User login with matric number |
+| GET | `/users/<user_id>` | Authenticated | Get user details |
+| GET | `/users` | Authenticated | List all users (paginated) |
+| PUT | `/users/update/<user_id>` | Self | Update user profile |
+| DELETE | `/users/delete/<user_id>` | Self | Delete user account |
+| POST | `/users/confirm` | Any | Confirm user email with OTP |
+| POST | `/users/resend-otp` | Any | Resend verification OTP |
+| POST | `/users/forgot-password` | Any | Initiate password reset |
+| POST | `/users/reset-password` | Any | Reset password with OTP |
 
-### Environment Variables
+## Event Routes
 
-Create a `.env` file in the root directory and add the following environment variables:
-```SECRET_KEY=
-DATABASE_URI= you can use neon to get a servless postgres db
+| Method | Route | Role | Description |
+|--------|-------|------|-------------|
+| GET | `/api/events/` | Authenticated | Get all approved events |
+| GET | `/api/events/<event_id>` | Authenticated | Get details of a specific event |
+| POST | `/api/events/` | Authenticated | Create a new event |
+| POST | `/api/events/<event_id>/rsvp` | Authenticated | RSVP to an event |
+| POST | `/api/events/<event_id>/cancel_rsvp` | Authenticated | Cancel an RSVP for an event |
+| GET | `/api/events/type/<event_type>` | Authenticated | Get events filtered by type |
 
-TEST_SECRET_KEY=
-TEST_DATABASE_URI=
+## Resource Routes
 
-PROD_SECRET_KEY=
-PROD_DATABASE_URI=
+| Method | Route | Role | Description |
+|--------|-------|------|-------------|
+| POST | `/api/resources/` | Authenticated | Upload a new resource |
+| GET | `/api/resources/level/<level>` | Authenticated | Get resources by academic level |
+| GET | `/api/resources/pending` | Admin | Get resources pending approval |
+| POST | `/api/resources/<resource_id>/approve` | Admin | Approve a resource |
+| DELETE | `/api/resources/<resource_id>` | Admin | Delete a resource |
 
-FLASK_ENV=
-JWT_SECRET_KEY=
+## Forum Routes
 
-API_KEY=
-EMAIL_USER=
-EMAIL_PASSWORD=
-```
-### Running the Application
+| Method | Route | Role | Description |
+|--------|-------|------|-------------|
+| GET | `/api/forums/` | Any | Get all forums |
+| POST | `/api/forums/` | Admin | Create a new forum |
+| POST | `/api/forums/<forum_id>/join` | Authenticated | Join a forum |
+| POST | `/api/forums/<forum_id>/threads` | Authenticated | Create a new thread in a forum |
+| POST | `/api/forums/threads/<thread_id>/messages` | Authenticated | Send a message in a thread |
+| GET | `/api/forums/threads/<thread_id>/messages` | Any | Get all messages in a thread |
+| POST | `/api/forums/messages/<message_id>/like` | Authenticated | Like a message |
 
-1. Start the Flask application:
-    ```sh
-    flask run (or python3 run.py)
-    ```
+## Mentorship Routes
 
-2. The application will be available at `http://localhost:5000/`.
+| Method | Route | Role | Description |
+|--------|-------|------|-------------|
+| POST | `/api/mentorship/apply` | Authenticated | Apply for mentorship as a student |
+| POST | `/api/mentorship/apply-mentor` | Authenticated | Apply to become a mentor |
+| GET | `/api/mentorship/applications` | Admin | Get pending mentorship applications |
+| GET | `/api/mentorship/mentor-applications` | Admin | Get pending mentor applications |
+| POST | `/api/mentorship/mentor-applications/<application_id>/approve` | Admin | Approve a mentor application |
+| POST | `/api/mentorship/mentor-applications/<application_id>/reject` | Admin | Reject a mentor application |
+| POST | `/api/mentorship/assign-mentor` | Admin | Assign a mentor to a student |
+| POST | `/api/mentorship/schedule-session` | Authenticated | Schedule a mentorship session |
+| POST | `/api/mentorship/submit-feedback` | Authenticated | Submit feedback for a session |
+| GET | `/api/mentorship/my-mentorships` | Authenticated | Get user's mentorship relationships |
+| GET | `/api/mentorship/mentorships/<mentorship_id>/sessions` | Authenticated | Get all sessions for a mentorship |
+| POST | `/api/mentorship/mentorships/<mentorship_id>/complete` | Mentor/Admin | Mark a mentorship as completed |
 
-### Running Tests
+## Admin Routes
 
-1. To run the tests, use the following command:
-    ```sh
-    pytest
-    ```
+| Method | Route | Role | Description |
+|--------|-------|------|-------------|
+| POST | `/admin/create` | API Key Required | Create admin user |
+| POST | `/admin/login` | API Key Required | Login admin |
 
-### Code Formatting
+## Home Route
 
-Before pushing changes, run the auto linter:
-```sh
-autopep8 --in-place --aggressive --aggressive $(git ls-files '*.py')
-```
-
-### ⚠️ after changes to DB schema run:
-```
-flask db migrate -m "update migration"
-flask db upgrade
-```
-
-### Contributing
-1. Fork the repository.
-2. Create a new branch (git checkout -b feature-branch).
-3. Commit your changes (git commit -m 'Add some feature').
-4. Push to the branch (git push origin feature-branch).
-5. Open a pull request.
+| Method | Route | Role | Description |
+|--------|-------|------|-------------|
+| GET | `/` | Any | Display welcome message and link to Swagger docs |
