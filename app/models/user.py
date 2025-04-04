@@ -21,6 +21,7 @@ class User(db.Model):
 
     is_admin = db.Column(db.Boolean, default=False) # Admins
     is_verified = db.Column(db.Boolean, default=False) # Admins verify users(students)
+    is_mentor = db.Column(db.Boolean, default=False)
 
     is_confirmed = db.Column(db.Boolean, nullable=True, default=False) # Users(students) confirm their emails
     confirmed_on = db.Column(db.DateTime, nullable=True) # time of email
