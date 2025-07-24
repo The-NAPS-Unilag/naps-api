@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from sqlalchemy.exc import IntegrityError
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from app.services.user_service import( filter_by_email,
     get_user_by_id,
@@ -106,8 +107,14 @@ def create_new_user():
             # departmental fees
         )
         return new_user, 201
+    except IntegrityError as e:
+        if 'user_email_key' in str(e.orig):
+            return jsonify({'message': 'This email already exists.'}), 409
+        if 'user_matric_no_key' in str(e.orig):
+            return jsonify({'message': 'This matriculation number already exists.'}), 409
+        return jsonify({'message': 'A database integrity error occurred. Please check your input.'}), 400
     except Exception as e:
-        return jsonify({'message': str(e)}), 400
+        return jsonify({'message': f'An unexpected error occurred: {str(e)}'}), 500
 
 @user_bp.route('/users/login', methods=['POST'])
 @api_key_required
@@ -128,7 +135,23 @@ def login_user():
             return jsonify({'message': 'Please confirm your email first'}), 403
 
         access_token = create_access_token(identity=user.id)
-        return jsonify(access_token=access_token), 200
+        user_data = {
+            'id': user.id,
+            'email': user.email,
+            'firstname': user.firstname,
+            'lastname': user.lastname,
+            'department': user.department,
+            'current_level': user.current_level,
+            'matric_no': user.matric_no,
+            'profile_picture': user.profile_picture,
+            'departmental_fees': user.departmental_fees,
+            'bio': user.bio,
+            'is_admin': user.is_admin,
+            'is_verified': user.is_verified,
+            'is_mentor': user.is_mentor,
+            'is_confirmed': user.is_confirmed
+        }
+        return jsonify(access_token=access_token, user=user_data), 200
 
     return jsonify({'message': 'Invalid credentials'}), 401
 
@@ -144,7 +167,23 @@ def login_user_matric():
 
     if user_matric and user_matric.verify_password(data['password']):
         access_token = create_access_token(identity=user_matric.id)
-        return jsonify(access_token=access_token), 200
+        user_data = {
+            'id': user_matric.id,
+            'email': user_matric.email,
+            'firstname': user_matric.firstname,
+            'lastname': user_matric.lastname,
+            'department': user_matric.department,
+            'current_level': user_matric.current_level,
+            'matric_no': user_matric.matric_no,
+            'profile_picture': user_matric.profile_picture,
+            'departmental_fees': user_matric.departmental_fees,
+            'bio': user_matric.bio,
+            'is_admin': user_matric.is_admin,
+            'is_verified': user_matric.is_verified,
+            'is_mentor': user_matric.is_mentor,
+            'is_confirmed': user_matric.is_confirmed
+        }
+        return jsonify(access_token=access_token, user=user_data), 200
     else:
         return jsonify({'message': 'Invalid credentials'}), 401
 
