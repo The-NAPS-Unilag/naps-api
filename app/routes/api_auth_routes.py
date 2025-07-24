@@ -11,10 +11,14 @@ auth_bp = Blueprint('auth_bp', __name__)
 @jwt_required()
 @admin_required
 def generate_api_key():
-    new_api_key = APIKey()
-    db.session.add(new_api_key)
-    db.session.commit()
-    return jsonify({'message': 'API key generated successfully', 'api_key': new_api_key.key}), 201
+    try:
+        new_api_key = APIKey()
+        db.session.add(new_api_key)
+        db.session.commit()
+        return jsonify({'message': 'API key generated successfully', 'api_key': new_api_key.key}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': f'Failed to generate API key: {str(e)}'}), 500
 
 # TODO FIX UP a workaround, doesnt look safe to me.
 @auth_bp.route('/test_generate_api_key', methods=['POST'])
