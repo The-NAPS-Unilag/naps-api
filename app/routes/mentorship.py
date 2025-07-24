@@ -5,6 +5,7 @@ from app.decorators.api_decorator import api_key_required
 from app.decorators.admin_decorator import admin_required
 from app.models import Mentorship
 from app.services.mentorship import MentorshipService
+from sqlalchemy.exc import IntegrityError
 from app.models.user import User
 
 mentorship_bp = Blueprint('mentorship', __name__, url_prefix='/api/mentorship')
@@ -16,10 +17,13 @@ def apply_for_mentorship():
     """Apply for mentorship as a student"""
     user_id = get_jwt_identity()
     data = request.get_json()
+    if not data:
+        return jsonify({'message': 'Request body must be JSON'}), 400
 
     required_fields = ['matric_no', 'level', 'areas_of_interest']
-    if not all(field in data for field in required_fields):
-        return jsonify({'message': 'Missing required fields'}), 400
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'message': f'{field} is required'}), 400
 
     try:
         application = MentorshipService.apply_for_mentorship(
@@ -32,8 +36,10 @@ def apply_for_mentorship():
             'message': 'Mentorship application submitted successfully',
             'application': application.to_dict()
         }), 201
+    except IntegrityError:
+        return jsonify({'message': 'You have already submitted an application.'}), 409
     except Exception as e:
-        return jsonify({'message': str(e)}), 500
+        return jsonify({'message': f'An unexpected error occurred: {str(e)}'}), 500
 
 @mentorship_bp.route('/apply-mentor', methods=['POST'])
 @api_key_required

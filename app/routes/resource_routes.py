@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 from http import HTTPStatus
 from app.services import resource_service
+from sqlalchemy.exc import IntegrityError
 from app.decorators.admin_decorator import admin_required
 from app.decorators.api_decorator import api_key_required
 
@@ -35,12 +36,15 @@ def upload_resource():
     if file.filename == '':
         return jsonify({'message': 'No selected file'}), HTTPStatus.BAD_REQUEST
 
-    # Upload file
+    required_fields = ['title', 'author', 'course_title', 'level']
+    for field in required_fields:
+        if field not in request.form:
+            return jsonify({'message': f'Missing required field: {field}'}), HTTPStatus.BAD_REQUEST
+
     upload_result = resource_service.upload_file(file)
     if not upload_result.success:
         return jsonify({'message': upload_result.error}), HTTPStatus.BAD_REQUEST
 
-    # Create resource
     try:
         resource_data = {
             'title': request.form['title'],
@@ -51,20 +55,18 @@ def upload_resource():
             'contributors': request.form.getlist('contributors'),
             'uploaded_by': get_jwt_identity()
         }
-    except KeyError as e:
+        result = resource_service.create_resource(resource_data)
+        if not result.success:
+            return jsonify({'message': result.error}), HTTPStatus.BAD_REQUEST
+
         return jsonify({
-            'message': 'Missing required field',
-            'error': str(e)
-        }), HTTPStatus.BAD_REQUEST
-
-    result = resource_service.create_resource(resource_data)
-    if not result.success:
-        return jsonify({'message': result.error}), HTTPStatus.BAD_REQUEST
-
-    return jsonify({
-        'message': 'Resource uploaded successfully',
-        'resource': format_resource_response(result.data)
-    }), HTTPStatus.CREATED
+            'message': 'Resource uploaded successfully',
+            'resource': format_resource_response(result.data)
+        }), HTTPStatus.CREATED
+    except IntegrityError:
+        return jsonify({'message': 'A resource with this title already exists.'}), HTTPStatus.CONFLICT
+    except Exception as e:
+        return jsonify({'message': f'An unexpected error occurred: {str(e)}'}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 @resource_bp.route('/level/<string:level>', methods=['GET'])
 @api_key_required

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_socketio import emit, join_room, leave_room
 from app.services.forum_service import ForumService
+from sqlalchemy.exc import IntegrityError
 from app.models.user import User
 from app.socketio import socketio
 from app.decorators.api_decorator import api_key_required
@@ -28,20 +29,28 @@ def create_forum():
         return jsonify({'message': 'Unauthorized. Only admins can create forums.'}), 403
 
     data = request.get_json()
+    if not data:
+        return jsonify({'message': 'Request body must be JSON'}), 400
+
     required_fields = ['name', 'description']
-    if not all(field in data for field in required_fields):
-        return jsonify({'message': 'Missing required fields: name and description.'}), 400
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'message': f'{field} is required'}), 400
 
-    forum = ForumService.create_forum(
-        name=data['name'],
-        description=data['description'],
-        is_general=data.get('is_general', False)
-    )
-
-    return jsonify({
-        'message': 'Forum created successfully.',
-        'forum': forum.to_dict()
-    }), 201
+    try:
+        forum = ForumService.create_forum(
+            name=data['name'],
+            description=data['description'],
+            is_general=data.get('is_general', False)
+        )
+        return jsonify({
+            'message': 'Forum created successfully.',
+            'forum': forum.to_dict()
+        }), 201
+    except IntegrityError:
+        return jsonify({'message': 'A forum with this name already exists.'}), 409
+    except Exception as e:
+        return jsonify({'message': f'An unexpected error occurred: {str(e)}'}), 500
 
 @forum_bp.route('/<int:forum_id>/join', methods=['POST'])
 @api_key_required

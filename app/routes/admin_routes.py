@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from sqlalchemy.exc import IntegrityError
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
 from app.models.user import User
 from app.services.admin_service import create_admin
@@ -13,10 +14,21 @@ admin_bp = Blueprint('admin_bp', __name__)
 @api_key_required
 def create_admin_user():
     data = request.get_json()
+    if not data:
+        return jsonify({'message': 'Request body must be JSON'}), 400
 
-    new_admin = create_admin(data['email'], data['password'])
+    required_fields = ['email', 'password']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'message': f'{field} is required'}), 400
 
-    return new_admin, 201
+    try:
+        new_admin = create_admin(data['email'], data['password'])
+        return new_admin, 201
+    except IntegrityError:
+        return jsonify({'message': 'This email is already registered as an admin.'}), 409
+    except Exception as e:
+        return jsonify({'message': f'An unexpected error occurred: {str(e)}'}), 500
 
 # login admin
 @admin_bp.route('/admin/login', methods=['POST'])

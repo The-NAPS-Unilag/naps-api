@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.decorators.api_decorator import api_key_required
 from datetime import datetime
 from app.services import event_service
+from sqlalchemy.exc import IntegrityError
 from http import HTTPStatus
 
 event_bp = Blueprint('event', __name__, url_prefix='/api/events')
@@ -52,6 +53,13 @@ def get_event(event_id):
 def create_event():
     """Create a new event."""
     data = request.get_json()
+    if not data:
+        return jsonify({'message': 'Request body must be JSON'}), HTTPStatus.BAD_REQUEST
+
+    required_fields = ['name', 'description', 'date', 'time', 'location', 'event_type', 'capacity']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'message': f'{field} is required'}), HTTPStatus.BAD_REQUEST
 
     try:
         event_data = {
@@ -64,21 +72,21 @@ def create_event():
             'capacity': int(data['capacity']),
             'created_by': get_jwt_identity()
         }
-    except (KeyError, ValueError) as e:
+        result = event_service.create_event(event_data)
+        if not result.success:
+            return jsonify({'message': result.error}), HTTPStatus.BAD_REQUEST
+
         return jsonify({
-            'message': 'Invalid input data',
-            'error': str(e)
-        }), HTTPStatus.BAD_REQUEST
-
-    result = event_service.create_event(event_data)
-    if not result.success:
-        return jsonify({'message': result.error}), HTTPStatus.BAD_REQUEST
-
-    return jsonify({
-        'id': result.data.id,
-        'name': result.data.name,
-        'message': 'Event created successfully.'
-    }), HTTPStatus.CREATED
+            'id': result.data.id,
+            'name': result.data.name,
+            'message': 'Event created successfully.'
+        }), HTTPStatus.CREATED
+    except (ValueError, TypeError) as e:
+        return jsonify({'message': f'Invalid data format: {str(e)}'}), HTTPStatus.BAD_REQUEST
+    except IntegrityError:
+        return jsonify({'message': 'An event with this name already exists.'}), HTTPStatus.CONFLICT
+    except Exception as e:
+        return jsonify({'message': f'An unexpected error occurred: {str(e)}'}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 @event_bp.route('/<int:event_id>/rsvp', methods=['POST'])
 @api_key_required
