@@ -36,9 +36,9 @@ class ForumService:
         return forum_member, "You have successfully joined the forum."
 
     @staticmethod
-    def create_thread(forum_id, title, user_id):
+    def create_thread(forum_id, title, body, user_id):
         """Create a new thread in a forum."""
-        thread = Thread(title=title, forum_id=forum_id, created_by=user_id)
+        thread = Thread(title=title, body=body, forum_id=forum_id, created_by=user_id)
         db.session.add(thread)
         db.session.commit()
         return thread

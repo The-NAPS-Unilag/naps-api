@@ -23,8 +23,10 @@ class Forum(db.Model):
 class Thread(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
+    body = db.Column(db.Text, nullable=False)
     forum_id = db.Column(db.Integer, db.ForeignKey('forum.id'), nullable=False)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    creator = db.relationship('User', backref='threads')
     created_on = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     def __repr__(self):
@@ -34,8 +36,14 @@ class Thread(db.Model):
         return {
             'id': self.id,
             'title': self.title,
+            'body': self.body,
             'forum_id': self.forum_id,
-            'created_by': self.created_by,
+            'created_by': {
+                'id': self.creator.id,
+                'firstname': self.creator.firstname,
+                'lastname': self.creator.lastname,
+                'profile_picture': self.creator.profile_picture
+            },
             'created_on': self.created_on.isoformat()
         }
 

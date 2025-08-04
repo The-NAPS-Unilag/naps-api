@@ -9,6 +9,7 @@ from flask_mail import Message
 
 from app.extensions import db, mail
 from app.models.user import User
+from app.models.mentorship import Mentorship
 from app.schemas.user_schema import UserSchema
 from werkzeug.security import generate_password_hash, check_password_hash
 from email_validator import validate_email, EmailNotValidError
@@ -274,7 +275,7 @@ def filter_by_email(email):
 
     return user
 
-def create_user(firstname, lastname, email, current_level, matric_no, password):
+def create_user(firstname, lastname, email, current_level, matric_no, password, departmental_fees=None, profile_picture=None):
     """
     Create a new user.
 
@@ -298,6 +299,8 @@ def create_user(firstname, lastname, email, current_level, matric_no, password):
         email=email,
         current_level=current_level,
         matric_no=matric_no,
+        departmental_fees=departmental_fees,
+        profile_picture=profile_picture
     )
 
     new_user.hash_password(password)
@@ -306,6 +309,21 @@ def create_user(firstname, lastname, email, current_level, matric_no, password):
 
     send_verification_email(new_user)
     return user_schema.dump(new_user)
+
+def get_mentor_by_mentee_id(mentee_id):
+    """
+    Get the mentor for a given mentee.
+
+    Args:
+        mentee_id (int): The ID of the mentee.
+
+    Returns:
+        User: The mentor's User object if found, otherwise None.
+    """
+    mentorship = Mentorship.query.filter_by(mentee_id=mentee_id, status='active').first()
+    if mentorship:
+        return mentorship.mentor
+    return None
 
 def edit_user(user_id, current_level, profile_picture, bio):
     """

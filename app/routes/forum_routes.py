@@ -71,10 +71,10 @@ def create_thread(forum_id):
     """Create a new thread in a forum."""
     user_id = get_jwt_identity()
     data = request.get_json()
-    if 'title' not in data:
-        return jsonify({'message': 'Title is required.'}), 400
+    if 'title' not in data or 'body' not in data:
+        return jsonify({'message': 'Title and body are required.'}), 400
 
-    thread = ForumService.create_thread(forum_id, data['title'], user_id)
+    thread = ForumService.create_thread(forum_id, data['title'], data['body'], user_id)
     return jsonify({'message': 'Thread created successfully.', 'thread': thread.to_dict()}), 201
 
 @forum_bp.route('/threads/<int:thread_id>/messages', methods=['POST'])
