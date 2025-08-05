@@ -9,6 +9,7 @@ from app.routes.event_routes import event_bp
 from app.routes.resource_routes import resource_bp
 from app.routes.forum_routes import forum_bp
 from app.routes.mentorship import mentorship_bp
+from app.routes.feedback_routes import feedback_bp
 
 from app.socketio import socketio
 
@@ -27,13 +28,14 @@ def create_app(config_class='app.config.Development'):
     mail.init_app(app)
 
     app.register_blueprint(hello_bp)
-    app.register_blueprint(admin_bp, url_prefix='/api')
+    app.register_blueprint(admin_bp)
     app.register_blueprint(user_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api')
     app.register_blueprint(event_bp)
     app.register_blueprint(resource_bp)
     app.register_blueprint(forum_bp)
     app.register_blueprint(mentorship_bp)
+    app.register_blueprint(feedback_bp)
 
     # swagger setup
     SWAGGER_URL = '/api/docs'

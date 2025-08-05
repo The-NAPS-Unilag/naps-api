@@ -24,9 +24,11 @@ class Thread(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     body = db.Column(db.Text, nullable=False)
+    views = db.Column(db.Integer, default=0)
     forum_id = db.Column(db.Integer, db.ForeignKey('forum.id'), nullable=False)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     creator = db.relationship('User', backref='threads')
+    messages = db.relationship('Message', backref='thread', lazy='dynamic')
     created_on = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     def __repr__(self):
@@ -44,7 +46,9 @@ class Thread(db.Model):
                 'lastname': self.creator.lastname,
                 'profile_picture': self.creator.profile_picture
             },
-            'created_on': self.created_on.isoformat()
+            'created_on': self.created_on.isoformat(),
+            'views': self.views,
+            'comment_count': self.messages.count()
         }
 
 
@@ -55,7 +59,9 @@ class Message(db.Model):
     sent_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     sent_on = db.Column(db.DateTime, default=db.func.current_timestamp())
     parent_message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=True)  # For replies
+    replies = db.relationship('Message', backref=db.backref('parent', remote_side=[id]), lazy='dynamic')
     likes = db.Column(db.Integer, default=0)
+    attachment_url = db.Column(db.String(500), nullable=True)
 
     def __repr__(self):
         return f'<Message {self.id}>'
@@ -68,7 +74,9 @@ class Message(db.Model):
             'sent_by': self.sent_by,
             'sent_on': self.sent_on.isoformat(),
             'parent_message_id': self.parent_message_id,
-            'likes': self.likes
+            'reply_count': self.replies.count(),
+            'likes': self.likes,
+            'attachment_url': self.attachment_url
         }
 
 

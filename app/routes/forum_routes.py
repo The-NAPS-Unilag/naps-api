@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_socketio import emit, join_room, leave_room
 from app.services.forum_service import ForumService
+from app.services.s3_service import upload_to_s3
 from sqlalchemy.exc import IntegrityError
 from app.models.user import User
 from app.socketio import socketio
@@ -77,17 +78,46 @@ def create_thread(forum_id):
     thread = ForumService.create_thread(forum_id, data['title'], data['body'], user_id)
     return jsonify({'message': 'Thread created successfully.', 'thread': thread.to_dict()}), 201
 
+@forum_bp.route('/threads/<int:thread_id>', methods=['GET'])
+@api_key_required
+@jwt_required()
+def get_thread(thread_id):
+    """Get a specific thread and its messages."""
+    thread = ForumService.get_thread_by_id(thread_id)
+    if not thread:
+        return jsonify({'message': 'Thread not found.'}), 404
+
+    messages = ForumService.get_thread_messages(thread_id)
+    return jsonify({
+        'thread': thread.to_dict(),
+        'messages': [message.to_dict() for message in messages]
+    }), 200
+
 @forum_bp.route('/threads/<int:thread_id>/messages', methods=['POST'])
 @api_key_required
 @jwt_required()
 def send_message(thread_id):
     """Send a message in a thread."""
     user_id = get_jwt_identity()
-    data = request.get_json()
+    data = request.form
     if 'content' not in data:
         return jsonify({'message': 'Content is required.'}), 400
 
-    message, error = ForumService.send_message(thread_id, data['content'], user_id, data.get('parent_message_id'))
+    attachment_url = None
+    if 'attachment' in request.files:
+        file = request.files['attachment']
+        if file.filename != '':
+            attachment_url = upload_to_s3(file, file.filename)
+            if not attachment_url:
+                return jsonify({'message': 'Failed to upload attachment.'}), 500
+
+    message, error = ForumService.send_message(
+        thread_id, 
+        data['content'], 
+        user_id, 
+        data.get('parent_message_id'), 
+        attachment_url
+    )
     if not message:
         return jsonify({'message': error}), 400
 
@@ -97,7 +127,33 @@ def send_message(thread_id):
         'message': message.to_dict()
     }, room=f'thread_{thread_id}')
 
-    return jsonify({'message': 'Message sent successfully.', 'message': message.to_dict()}), 201
+    return jsonify({'message': 'Message sent successfully.', 'message': message.to_dict()}), 200
+
+@forum_bp.route('/explore', methods=['GET'])
+@api_key_required
+def explore_forums():
+    """Explore all available forums."""
+    forums = ForumService.get_all_forums()
+    return jsonify([forum.to_dict() for forum in forums]), 200
+
+@forum_bp.route('/recommended', methods=['GET'])
+@api_key_required
+def recommended_forums():
+    """Get a list of recommended forums."""
+    forums = ForumService.get_recommended_forums()
+    return jsonify([forum.to_dict() for forum in forums]), 200
+
+@forum_bp.route('/top-contributors', methods=['GET'])
+@api_key_required
+def top_contributors():
+    """Get a list of top contributors."""
+    users = ForumService.get_top_contributors()
+    return jsonify([{
+        'id': user.id,
+        'firstname': user.firstname,
+        'lastname': user.lastname,
+        'profile_picture': user.profile_picture
+    } for user in users]), 200
 
 @forum_bp.route('/threads/<int:thread_id>/messages', methods=['GET'])
 @api_key_required

@@ -22,6 +22,8 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, default=False) # Admins
     is_verified = db.Column(db.Boolean, default=False) # Admins verify users(students)
     is_mentor = db.Column(db.Boolean, default=False)
+    is_super_admin = db.Column(db.Boolean, default=False)
+    is_active = db.Column(db.Boolean, default=True)
 
     is_confirmed = db.Column(db.Boolean, nullable=True, default=False) # Users(students) confirm their emails
     confirmed_on = db.Column(db.DateTime, nullable=True) # time of email
@@ -31,6 +33,24 @@ class User(db.Model):
 
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+            'firstname': self.firstname,
+            'lastname': self.lastname,
+            'matric_no': self.matric_no,
+            'level': self.current_level,
+            'department': self.department,
+            'is_admin': self.is_admin,
+            'is_super_admin': self.is_super_admin,
+            'is_verified': self.is_verified,
+            'is_mentor': self.is_mentor,
+            'is_active': self.is_active,
+            'is_confirmed': self.is_confirmed,
+            'created_at': self.created_on.isoformat() if self.created_on else None
+        }
 
     def update_password(self, new_password):
         self.hash_password(new_password)
