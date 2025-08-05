@@ -1,66 +1,108 @@
-from app.models.mentorship import (
-    MentorshipApplication,
-    MentorApplication,
-    Mentorship,
-    MentorshipSession,
-    MentorshipFeedback
-)
+from app.models.mentorship import MentorshipApplication, MentorApplication, Mentorship, MentorshipSession, MentorshipFeedback
 from app.models.user import User
-from app.extensions import db, mail
-from flask_mail import Message
+from app.extensions import db
+from app.services.notification_service import send_email
+from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
+from flask_mail import Message
+from app import mail
 
 class MentorshipService:
+    # --- Mentee Application Services ---
     @staticmethod
-    def apply_for_mentorship(student_id, matric_no, level, areas_of_interest):
-        """Create a new mentorship application"""
-        application = MentorshipApplication(
-            student_id=student_id,
-            matric_no=matric_no,
-            level=level,
-            areas_of_interest=areas_of_interest
-        )
-        db.session.add(application)
-        db.session.commit()
-
-        # Send confirmation email
-        student = User.query.get(student_id)
-        msg = Message(
-            subject="Mentorship Application Received",
-            recipients=[student.email],
-            body=f"Your mentorship application has been received and is under review."
-        )
-        mail.send(msg)
-
-        return application
+    def get_all_mentee_applications(status=None):
+        """Get all mentee applications, filterable by status."""
+        query = MentorshipApplication.query
+        if status:
+            query = query.filter_by(status=status)
+        return query.all()
 
     @staticmethod
-    def apply_to_be_mentor(applicant_id, phone_no, academic_background, area_of_expertise, preferred_mode):
-        """Apply to become a mentor"""
-        # Check if user is eligible (e.g., higher level)
-        applicant = User.query.get(applicant_id)
-        if not applicant or not applicant.current_level or int(applicant.current_level) < 300:
-            return None, "You must be at least at 300 level to apply as a mentor."
+    def approve_mentee_application(application_id):
+        """Approve a mentee application."""
+        application = MentorshipApplication.query.get(application_id)
+        if not application:
+            return None, "Application not found."
+        if application.status != 'pending':
+            return None, f"Application is already {application.status}."
 
-        application = MentorApplication(
-            applicant_id=applicant_id,
-            phone_no=phone_no,
-            academic_background=academic_background,
-            area_of_expertise=area_of_expertise,
-            preferred_mode=preferred_mode
-        )
-        db.session.add(application)
-        db.session.commit()
+        try:
+            application.status = 'approved'
+            db.session.commit()
+            # Notify applicant
+            subject = "Your Mentee Application has been Approved!"
+            html_body = f"<p>Hi {application.student.firstname},</p><p>Your application to become a mentee has been approved. You can now be matched with a mentor.</p>"
+            send_email(subject, [application.student.email], html_body)
+            return application, "Mentee application approved."
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            return None, f"Database error: {str(e)}"
 
-        # Send confirmation email
-        msg = Message(
-            subject="Mentor Application Received",
-            recipients=[applicant.email],
-            body=f"Your mentor application has been received and is under review."
-        )
-        mail.send(msg)
+    @staticmethod
+    def reject_mentee_application(application_id):
+        """Reject a mentee application."""
+        application = MentorshipApplication.query.get(application_id)
+        if not application:
+            return None, "Application not found."
+        if application.status != 'pending':
+            return None, f"Application is already {application.status}."
 
-        return application, "Application submitted successfully."
+        try:
+            application.status = 'rejected'
+            db.session.commit()
+            # Notify applicant
+            subject = "Update on Your Mentee Application"
+            html_body = f"<p>Hi {application.student.firstname},</p><p>Thank you for your interest. After careful review, we are unable to approve your mentee application at this time.</p>"
+            send_email(subject, [application.student.email], html_body)
+            return application, "Mentee application rejected."
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            return None, f"Database error: {str(e)}"
+
+    # --- Mentor Application Services ---
+    @staticmethod
+    def get_all_mentor_applications(status=None):
+        """Get all mentor applications, filterable by status."""
+        query = MentorApplication.query
+        if status:
+            query = query.filter_by(status=status)
+        return query.all()
+
+    # --- Mentorship Pairing Service ---
+    @staticmethod
+    def create_mentorship_pairing(mentor_id, mentee_id):
+        """Create a mentorship pairing between a mentor and a mentee."""
+        mentor = User.query.filter_by(id=mentor_id, is_mentor=True).first()
+        if not mentor:
+            return None, "Mentor not found or user is not a mentor."
+
+        mentee = User.query.get(mentee_id)
+        if not mentee:
+            return None, "Mentee not found."
+
+        # Check if mentee has an approved application
+        mentee_application = MentorshipApplication.query.filter_by(student_id=mentee_id, status='approved').first()
+        if not mentee_application:
+            return None, "Mentee does not have an approved application."
+
+        try:
+            mentorship = Mentorship(mentor_id=mentor_id, mentee_id=mentee_id)
+            db.session.add(mentorship)
+            db.session.commit()
+
+            # Notify both users
+            mentor_subject = "You have a new Mentee!"
+            mentor_body = f"<p>Hi {mentor.firstname},</p><p>You have been paired with a new mentee, {mentee.firstname} {mentee.lastname}.</p>"
+            send_email(mentor_subject, [mentor.email], mentor_body)
+
+            mentee_subject = "You have a new Mentor!"
+            mentee_body = f"<p>Hi {mentee.firstname},</p><p>You have been paired with a new mentor, {mentor.firstname} {mentor.lastname}.</p>"
+            send_email(mentee_subject, [mentee.email], mentee_body)
+
+            return mentorship, "Mentorship pairing created successfully."
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            return None, f"Database error: {str(e)}"
 
     @staticmethod
     def get_pending_mentorship_applications():

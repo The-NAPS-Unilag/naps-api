@@ -10,7 +10,7 @@ class Resource(db.Model):
     contributors = db.Column(db.String(500), nullable=True)  # Comma-separated list of contributors
     uploaded_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # User who uploaded the resource
     uploaded_on = db.Column(db.DateTime, default=db.func.current_timestamp())
-    is_approved = db.Column(db.Boolean, default=False)  # Whether the resource is approved by admins
+    status = db.Column(db.String(50), default='pending', nullable=False)  # 'pending', 'approved', 'rejected'
 
     def __repr__(self):
         return f'<Resource {self.title}>'
@@ -27,5 +27,5 @@ class Resource(db.Model):
             'contributors': self.contributors,
             'uploaded_by': self.uploaded_by,
             'uploaded_on': self.uploaded_on.isoformat(),
-            'is_approved': self.is_approved
+            'status': self.status
         }

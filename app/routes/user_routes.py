@@ -1,15 +1,17 @@
 from flask import Blueprint, request, jsonify
 from sqlalchemy.exc import IntegrityError
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from app.services.user_service import( filter_by_email,
+from app.services.user_service import (filter_by_email,
     get_user_by_id,
     create_user,
     edit_user,
     confirm_user_email,
     send_verification_email,
     initiate_password_reset,
-    reset_password
+    reset_password,
+    get_mentor_by_mentee_id
 )
+from app.services.s3_service import upload_to_s3
 from app.schemas.user_schema import UserSchema
 from app.extensions import db
 from werkzeug.security import check_password_hash
@@ -88,7 +90,8 @@ def resend_verification_otp():
 @api_key_required
 def create_new_user():
     """Create new user account"""
-    data = request.get_json()
+    # Use request.form for form data and request.files for files
+    data = request.form
 
     # Validate input
     required_fields = ['firstname', 'lastname', 'email', 'current_level', 'matric_no', 'password']
@@ -96,15 +99,30 @@ def create_new_user():
         if field not in data:
             return jsonify({'message': f'{field} is required'}), 400
 
+    departmental_fees_file = request.files.get('departmental_fees')
+    departmental_fees_url = None
+    if departmental_fees_file:
+        departmental_fees_url = upload_to_s3(departmental_fees_file, departmental_fees_file.filename)
+        if not departmental_fees_url:
+            return jsonify({'message': 'Failed to upload departmental fees picture.'}), 500
+
+    profile_picture_file = request.files.get('profile_picture')
+    profile_picture_url = None
+    if profile_picture_file:
+        profile_picture_url = upload_to_s3(profile_picture_file, profile_picture_file.filename)
+        if not profile_picture_url:
+            return jsonify({'message': 'Failed to upload profile picture.'}), 500
+
     try:
         new_user = create_user(
-            data['firstname'],
-            data['lastname'],
-            data['email'],
-            data['current_level'],
-            data['matric_no'],
-            data['password']
-            # departmental fees
+            firstname=data['firstname'],
+            lastname=data['lastname'],
+            email=data['email'],
+            current_level=data['current_level'],
+            matric_no=data['matric_no'],
+            password=data['password'],
+            departmental_fees=departmental_fees_url,
+            profile_picture=profile_picture_url
         )
         return new_user, 201
     except IntegrityError as e:
@@ -135,6 +153,18 @@ def login_user():
             return jsonify({'message': 'Please confirm your email first'}), 403
 
         access_token = create_access_token(identity=user.id)
+        
+        mentor = get_mentor_by_mentee_id(user.id)
+        mentor_data = None
+        if mentor:
+            mentor_data = {
+                'id': mentor.id,
+                'firstname': mentor.firstname,
+                'lastname': mentor.lastname,
+                'email': mentor.email,
+                'profile_picture': mentor.profile_picture
+            }
+
         user_data = {
             'id': user.id,
             'email': user.email,
@@ -149,7 +179,8 @@ def login_user():
             'is_admin': user.is_admin,
             'is_verified': user.is_verified,
             'is_mentor': user.is_mentor,
-            'is_confirmed': user.is_confirmed
+            'is_confirmed': user.is_confirmed,
+            'mentor': mentor_data
         }
         return jsonify(access_token=access_token, user=user_data), 200
 
@@ -167,6 +198,16 @@ def login_user_matric():
 
     if user_matric and user_matric.verify_password(data['password']):
         access_token = create_access_token(identity=user_matric.id)
+        mentor = get_mentor_by_mentee_id(user_matric.id)
+        mentor_data = None
+        if mentor:
+            mentor_data = {
+                'id': mentor.id,
+                'firstname': mentor.firstname,
+                'lastname': mentor.lastname,
+                'email': mentor.email,
+                'profile_picture': mentor.profile_picture
+            }
         user_data = {
             'id': user_matric.id,
             'email': user_matric.email,
@@ -181,7 +222,8 @@ def login_user_matric():
             'is_admin': user_matric.is_admin,
             'is_verified': user_matric.is_verified,
             'is_mentor': user_matric.is_mentor,
-            'is_confirmed': user_matric.is_confirmed
+            'is_confirmed': user_matric.is_confirmed,
+            'mentor': mentor_data
         }
         return jsonify(access_token=access_token, user=user_data), 200
     else:
@@ -228,17 +270,23 @@ def edit_existing_user(user_id):
     if current_user_id != user_id:
         return jsonify({'message': 'Permission denied'}), 403
 
-    data = request.get_json()
+    data = request.form
+    current_level = data.get('current_level')
+    bio = data.get('bio')
 
-    current_level = data['current_level']
-    profile_picture = data['profile_picture']
-    bio = data['bio']
+    profile_picture_file = request.files.get('profile_picture')
+    profile_picture_url = None
+
+    if profile_picture_file:
+        profile_picture_url = upload_to_s3(profile_picture_file, profile_picture_file.filename)
+        if not profile_picture_url:
+            return jsonify({'message': 'Failed to upload profile picture.'}), 500
 
     edit_user(
-        current_user_id,
-        current_level,
-        profile_picture,
-        bio
+        user_id=current_user_id,
+        current_level=current_level,
+        profile_picture=profile_picture_url,
+        bio=bio
     )
 
     return jsonify({'message': 'Edited Successful'}), 200
