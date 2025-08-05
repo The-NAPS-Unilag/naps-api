@@ -1,4 +1,6 @@
 from app.models.forum import Forum, Thread, Message, ForumMember
+from app.models.user import User
+from sqlalchemy import func
 from app.extensions import db
 
 class ForumService:
@@ -36,15 +38,15 @@ class ForumService:
         return forum_member, "You have successfully joined the forum."
 
     @staticmethod
-    def create_thread(forum_id, title, user_id):
+    def create_thread(forum_id, title, body, user_id):
         """Create a new thread in a forum."""
-        thread = Thread(title=title, forum_id=forum_id, created_by=user_id)
+        thread = Thread(title=title, body=body, forum_id=forum_id, created_by=user_id)
         db.session.add(thread)
         db.session.commit()
         return thread
 
     @staticmethod
-    def send_message(thread_id, content, user_id, parent_message_id=None):
+    def send_message(thread_id, content, user_id, parent_message_id=None, attachment_url=None):
         """Send a message in a thread."""
         if len(content) > 1000:
             return None, "Message exceeds the character limit of 1000."
@@ -53,16 +55,37 @@ class ForumService:
             content=content,
             thread_id=thread_id,
             sent_by=user_id,
-            parent_message_id=parent_message_id
+            parent_message_id=parent_message_id,
+            attachment_url=attachment_url
         )
         db.session.add(message)
         db.session.commit()
         return message, "Message sent successfully."
 
     @staticmethod
+    @staticmethod
+    def get_thread_by_id(thread_id):
+        """Retrieve a specific thread by its ID and increment its view count."""
+        thread = Thread.query.get(thread_id)
+        if thread:
+            thread.views += 1
+            db.session.commit()
+        return thread
+
+    @staticmethod
     def get_thread_messages(thread_id):
         """Retrieve all messages in a thread."""
         return Message.query.filter_by(thread_id=thread_id).order_by(Message.sent_on.asc()).all()
+
+    @staticmethod
+    def get_recommended_forums(limit=5):
+        """Retrieve recommended forums based on the number of threads."""
+        return Forum.query.join(Thread).group_by(Forum.id).order_by(func.count(Thread.id).desc()).limit(limit).all()
+
+    @staticmethod
+    def get_top_contributors(limit=5):
+        """Retrieve top contributors based on the number of messages sent."""
+        return User.query.join(Message).group_by(User.id).order_by(func.count(Message.id).desc()).limit(limit).all()
 
     @staticmethod
     def like_message(message_id):

@@ -8,11 +8,14 @@ from flask import current_app, jsonify
 from flask_mail import Message
 
 from app.extensions import db, mail
+import re
 from app.models.user import User
+from app.models.mentorship import Mentorship
 from app.schemas.user_schema import UserSchema
 from werkzeug.security import generate_password_hash, check_password_hash
 from email_validator import validate_email, EmailNotValidError
 from sqlalchemy.orm import Session
+from sqlalchemy import func, or_
 
 
 # OTP Configuration
@@ -274,7 +277,7 @@ def filter_by_email(email):
 
     return user
 
-def create_user(firstname, lastname, email, current_level, matric_no, password):
+def create_user(firstname, lastname, email, current_level, matric_no, password, departmental_fees=None, profile_picture=None):
     """
     Create a new user.
 
@@ -298,6 +301,8 @@ def create_user(firstname, lastname, email, current_level, matric_no, password):
         email=email,
         current_level=current_level,
         matric_no=matric_no,
+        departmental_fees=departmental_fees,
+        profile_picture=profile_picture
     )
 
     new_user.hash_password(password)
@@ -306,6 +311,104 @@ def create_user(firstname, lastname, email, current_level, matric_no, password):
 
     send_verification_email(new_user)
     return user_schema.dump(new_user)
+
+def _validate_password(password):
+    """Validate password against security requirements."""
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long."
+    if not re.search(r'[A-Z]', password):
+        return False, "Password must contain at least one uppercase letter."
+    if not re.search(r'[0-9]', password):
+        return False, "Password must contain at least one number."
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        return False, "Password must contain at least one special character."
+    return True, ""
+
+def create_admin_user(email, password, firstname, lastname, is_super_admin=False):
+    """Create a new admin or super admin user."""
+    is_valid, message = _validate_password(password)
+    if not is_valid:
+        return None, message
+
+    if User.query.filter_by(email=email).first():
+        return None, "An account with this email already exists."
+
+    user = User(
+        email=email,
+        firstname=firstname,
+        lastname=lastname,
+        is_admin=True,
+        is_super_admin=is_super_admin,
+        is_confirmed=True  # Admins are confirmed by default
+    )
+    user.hash_password(password)
+    db.session.add(user)
+    db.session.commit()
+    return user, "Admin user created successfully."
+
+def get_user_by_id(user_id):
+    """Get a single user by their ID."""
+    return User.query.get(user_id)
+
+def get_all_users(search=None):
+    """Get all non-admin users, with optional search."""
+    query = User.query.filter_by(is_admin=False, is_super_admin=False)
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                (User.firstname + ' ' + User.lastname).ilike(search_term),
+                User.email.ilike(search_term),
+                User.matric_no.ilike(search_term)
+            )
+        )
+    return query.all()
+
+def deactivate_user(user_id):
+    """Deactivate a user's account."""
+    user = User.query.get(user_id)
+    if not user or user.is_admin:
+        return None, "User not found or is an admin."
+    user.is_active = False
+    db.session.commit()
+    return user, "User deactivated successfully."
+
+def reactivate_user(user_id):
+    """Reactivate a user's account."""
+    user = User.query.get(user_id)
+    if not user or user.is_admin:
+        return None, "User not found or is an admin."
+    user.is_active = True
+    db.session.commit()
+    return user, "User reactivated successfully."
+
+def delete_user(user_id):
+    """Permanently delete a user from the database."""
+    user = get_user_by_id(user_id)
+    if not user:
+        return None, "User not found."
+
+    if user.is_admin or user.is_super_admin:
+        return None, "Admin accounts cannot be deleted through this endpoint."
+
+    db.session.delete(user)
+    db.session.commit()
+    return user, "User deleted successfully."
+
+def get_mentor_by_mentee_id(mentee_id):
+    """
+    Get the mentor for a given mentee.
+
+    Args:
+        mentee_id (int): The ID of the mentee.
+
+    Returns:
+        User: The mentor's User object if found, otherwise None.
+    """
+    mentorship = Mentorship.query.filter_by(mentee_id=mentee_id, status='active').first()
+    if mentorship:
+        return mentorship.mentor
+    return None
 
 def edit_user(user_id, current_level, profile_picture, bio):
     """

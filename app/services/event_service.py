@@ -1,10 +1,78 @@
-from datetime import datetime
-from typing import Tuple, List, Optional, Dict, Any
+from app.models.event import Event
+from app.models.user import User
+from app.extensions import db
+from app.services.notification_service import send_email
 from dataclasses import dataclass
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.event import Event, RSVP
 from app.models.user import User
 from app.extensions import db
+from typing import Tuple, Optional, Dict, Any
+
+def get_all_events(approved_status=None):
+    """Get all events, with optional filtering by approval status."""
+    query = Event.query
+    if approved_status is not None:
+        query = query.filter_by(is_approved=approved_status)
+    return query.all()
+
+def get_event_by_id(event_id):
+    """Get a single event by its ID."""
+    return Event.query.get(event_id)
+
+def approve_event(event_id):
+    """Approve a pending event and notify the creator."""
+    event = get_event_by_id(event_id)
+    if not event:
+        return None, "Event not found."
+    
+    if event.is_approved:
+        return None, "Event is already approved."
+
+    try:
+        event.is_approved = True
+        db.session.commit()
+
+        creator = User.query.get(event.created_by)
+        if creator:
+            subject = "Your Event has been Approved!"
+            html_body = f"<p>Hi {creator.firstname},</p><p>Your proposed event, '{event.name}', has been approved by an admin and is now listed on the platform.</p><p>Thank you for your contribution!</p>"
+            send_email(subject, [creator.email], html_body)
+
+        return event, "Event approved successfully."
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return None, f"Database error: {str(e)}"
+
+def reject_event(event_id):
+    """Reject and delete a pending event, then notify the creator."""
+    event = get_event_by_id(event_id)
+    if not event:
+        return None, "Event not found."
+
+    if event.is_approved:
+        return None, "Cannot reject an already approved event."
+
+    try:
+        creator = User.query.get(event.created_by)
+        event_name = event.name
+        creator_email = creator.email if creator else None
+        creator_firstname = creator.firstname if creator else 'there'
+
+        db.session.delete(event)
+        db.session.commit()
+
+        if creator_email:
+            subject = "Update on Your Event Submission"
+            html_body = f"<p>Hi {creator_firstname},</p><p>Thank you for your submission. After careful review, your event, '{event_name}', was not approved at this time.</p><p>We appreciate your effort and encourage you to submit other events in the future.</p>"
+            send_email(subject, [creator_email], html_body)
+
+        return True, "Event rejected and deleted successfully."
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return None, f"Database error: {str(e)}"
+
+
 
 @dataclass
 class EventResult:
