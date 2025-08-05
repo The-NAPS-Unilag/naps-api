@@ -8,6 +8,7 @@ from app.models.event import Event, RSVP
 from app.models.user import User
 from app.extensions import db
 from typing import Tuple, Optional, Dict, Any
+from datetime import datetime
 
 def get_all_events(approved_status=None):
     """Get all events, with optional filtering by approval status."""
@@ -25,7 +26,7 @@ def approve_event(event_id):
     event = get_event_by_id(event_id)
     if not event:
         return None, "Event not found."
-    
+
     if event.is_approved:
         return None, "Event is already approved."
 
