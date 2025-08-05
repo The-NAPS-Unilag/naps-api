@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, create_access_token
+from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity
 from app.decorators.admin_decorator import super_admin_required, admin_required
 from app.decorators.api_decorator import api_key_required
 from app.services.user_service import (
@@ -206,7 +206,7 @@ def list_events():
         approved = True
     elif status == 'pending':
         approved = False
-    
+
     events = get_all_events(approved_status=approved)
     return jsonify([event.to_dict() for event in events]), 200
 
@@ -336,7 +336,7 @@ def list_feedback_route():
     """List all feedback entries."""
     category = request.args.get('category')
     status = request.args.get('status')
-    
+
     feedback_list = get_all_feedback(category=category, status=status)
     return jsonify([f.to_dict() for f in feedback_list]), 200
 
@@ -383,7 +383,7 @@ def export_users_csv_route():
     csv_data, message = generate_users_csv()
     if not csv_data:
         return jsonify({'message': message}), 500
-    
+
     response = Response(
         csv_data,
         mimetype="text/csv",
@@ -401,7 +401,7 @@ def export_summary_pdf_route():
     pdf_data, message = generate_summary_pdf()
     if not pdf_data:
         return jsonify({'message': message}), 500
-    
+
     response = Response(
         pdf_data,
         mimetype="application/pdf",
