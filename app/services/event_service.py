@@ -8,6 +8,7 @@ from app.models.event import Event, RSVP
 from app.models.user import User
 from app.extensions import db
 from typing import Tuple, Optional, Dict, Any
+
 from datetime import datetime
 
 def get_all_events(approved_status=None):

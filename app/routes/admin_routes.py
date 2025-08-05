@@ -206,7 +206,6 @@ def list_events():
         approved = True
     elif status == 'pending':
         approved = False
-
     events = get_all_events(approved_status=approved)
     return jsonify([event.to_dict() for event in events]), 200
 
@@ -383,7 +382,6 @@ def export_users_csv_route():
     csv_data, message = generate_users_csv()
     if not csv_data:
         return jsonify({'message': message}), 500
-
     response = Response(
         csv_data,
         mimetype="text/csv",
@@ -401,7 +399,6 @@ def export_summary_pdf_route():
     pdf_data, message = generate_summary_pdf()
     if not pdf_data:
         return jsonify({'message': message}), 500
-
     response = Response(
         pdf_data,
         mimetype="application/pdf",
