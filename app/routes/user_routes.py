@@ -153,6 +153,7 @@ def login_user():
             return jsonify({'message': 'Please confirm your email first'}), 403
 
         access_token = create_access_token(identity=user.id)
+        
         mentor = get_mentor_by_mentee_id(user.id)
         mentor_data = None
         if mentor:
@@ -207,7 +208,6 @@ def login_user_matric():
                 'email': mentor.email,
                 'profile_picture': mentor.profile_picture
             }
-
         user_data = {
             'id': user_matric.id,
             'email': user_matric.email,
