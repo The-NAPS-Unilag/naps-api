@@ -68,12 +68,41 @@ paths:
       description: Create a new user account.
       security:
         - ApiKeyAuth: []
+      consumes:
+        - multipart/form-data
       parameters:
-        - name: body
-          in: body
+        - name: firstname
+          in: formData
+          type: string
           required: true
-          schema:
-            $ref: '#/definitions/NewUser'
+        - name: lastname
+          in: formData
+          type: string
+          required: true
+        - name: email
+          in: formData
+          type: string
+          required: true
+        - name: current_level
+          in: formData
+          type: string
+          required: true
+        - name: matric_no
+          in: formData
+          type: string
+          required: true
+        - name: password
+          in: formData
+          type: string
+          required: true
+        - name: departmental_fees
+          in: formData
+          type: file
+          required: false
+        - name: profile_picture
+          in: formData
+          type: file
+          required: false
       responses:
         201:
           description: User created successfully
@@ -81,28 +110,30 @@ paths:
             $ref: '#/definitions/User'
         400:
           description: Invalid input
+        409:
+          description: Email or matric number already exists
   /users/{user_id}:
-    get:
-      tags:
-        - Users
-      summary: Get a user by ID
-      description: Retrieve a user by their ID.
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-      parameters:
-        - name: user_id
-          in: path
-          type: integer
-          required: true
-          description: ID of the user to retrieve
-      responses:
-        200:
-          description: User found
-          schema:
-            $ref: '#/definitions/User'
-        404:
-          description: User not found
+      get:
+        tags:
+          - Users
+        summary: Get a user by ID
+        description: Retrieve a user by their ID.
+        security:
+          - ApiKeyAuth: []
+          - BearerAuth: []
+        parameters:
+          - name: user_id
+            in: path
+            type: integer
+            required: true
+            description: ID of the user to retrieve
+        responses:
+          200:
+            description: User found
+            schema:
+              $ref: '#/definitions/User'
+          404:
+            description: Application not found
   /users/confirm:
     post:
       tags:
@@ -163,8 +194,12 @@ paths:
             properties:
               access_token:
                 type: string
+              user:
+                $ref: '#/definitions/UserWithMentor'
         401:
           description: Invalid credentials
+        403:
+          description: Email not confirmed
   /users/login/matric:
     post:
       tags:
@@ -187,6 +222,8 @@ paths:
             properties:
               access_token:
                 type: string
+              user:
+                $ref: '#/definitions/UserWithMentor'
         401:
           description: Invalid credentials
   /users/forgot-password:
@@ -236,17 +273,26 @@ paths:
       security:
         - ApiKeyAuth: []
         - BearerAuth: []
+      consumes:
+        - multipart/form-data
       parameters:
         - name: user_id
           in: path
           type: integer
           required: true
           description: ID of the user to update
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/UpdateUser'
+        - name: current_level
+          in: formData
+          type: string
+          required: false
+        - name: bio
+          in: formData
+          type: string
+          required: false
+        - name: profile_picture
+          in: formData
+          type: file
+          required: false
       responses:
         200:
           description: User updated successfully
@@ -504,6 +550,35 @@ paths:
             $ref: '#/definitions/Thread'
         400:
           description: Missing required fields
+  /forums/threads/{thread_id}:
+    get:
+      tags:
+        - Forums
+      summary: Get thread details
+      description: Get a specific thread and its messages.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: thread_id
+          in: path
+          type: integer
+          required: true
+          description: ID of the thread to retrieve.
+      responses:
+        200:
+          description: Thread details with messages
+          schema:
+            type: object
+            properties:
+              thread:
+                $ref: '#/definitions/Thread'
+              messages:
+                type: array
+                items:
+                  $ref: '#/definitions/Message'
+        404:
+          description: Thread not found
   /forums/threads/{thread_id}/messages:
     post:
       tags:
@@ -513,19 +588,28 @@ paths:
       security:
         - ApiKeyAuth: []
         - BearerAuth: []
+      consumes:
+        - multipart/form-data
       parameters:
         - name: thread_id
           in: path
           type: integer
           required: true
           description: ID of the thread to send the message in.
-        - name: body
-          in: body
+        - name: content
+          in: formData
+          type: string
           required: true
-          schema:
-            $ref: '#/definitions/NewMessage'
+        - name: parent_message_id
+          in: formData
+          type: integer
+          required: false
+        - name: attachment
+          in: formData
+          type: file
+          required: false
       responses:
-        201:
+        200:
           description: Message sent successfully
           schema:
             $ref: '#/definitions/Message'
@@ -551,6 +635,51 @@ paths:
             type: array
             items:
               $ref: '#/definitions/Message'
+  /forums/explore:
+    get:
+      tags:
+        - Forums
+      summary: Explore all forums
+      description: Explore all available forums.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: List of all forums
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Forum'
+  /forums/recommended:
+    get:
+      tags:
+        - Forums
+      summary: Get recommended forums
+      description: Get a list of recommended forums.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: List of recommended forums
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Forum'
+  /forums/top-contributors:
+    get:
+      tags:
+        - Forums
+      summary: Get top contributors
+      description: Get a list of top contributors.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: List of top contributors
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TopContributor'
   /forums/messages/{message_id}/like:
     post:
       tags:
@@ -700,14 +829,61 @@ paths:
               $ref: '#/definitions/Event'
         500:
           description: Internal server error
-  /admin/create:
+  /feedback:
+    post:
+      tags:
+        - Feedback
+      summary: Submit feedback
+      description: Submit new feedback.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/NewFeedback'
+      responses:
+        201:
+          description: Feedback submitted successfully
+          schema:
+            $ref: '#/definitions/Feedback'
+        400:
+          description: Missing required fields
+  /admins/login:
+      post:
+        tags:
+          - Admin
+        summary: Admin login
+        description: Authenticate an admin user and return an access token.
+        security:
+          - ApiKeyAuth: []
+        parameters:
+          - name: body
+            in: body
+            required: true
+            schema:
+              $ref: '#/definitions/AdminLogin'
+        responses:
+          200:
+            description: Login successful
+            schema:
+              type: object
+              properties:
+                access_token:
+                  type: string
+          401:
+            description: Invalid credentials
+  /admins/super-admin:
     post:
       tags:
         - Admin
-      summary: Create an admin user
-      description: Create a new admin user.
+      summary: Create super admin
+      description: Create a new super admin user (super admin only).
       security:
         - ApiKeyAuth: []
+        - BearerAuth: []
       parameters:
         - name: body
           in: body
@@ -716,35 +892,516 @@ paths:
             $ref: '#/definitions/NewAdmin'
       responses:
         201:
-          description: Admin user created successfully
-          schema:
-            $ref: '#/definitions/Admin'
+          description: Super admin created successfully
         400:
-          description: Invalid input
-  /admin/login:
+          description: Invalid input or user already exists
+  /admins/admin:
     post:
       tags:
         - Admin
-      summary: Admin login
-      description: Authenticate an admin user and return an access token.
+      summary: Create admin
+      description: Create a new admin user (super admin only).
       security:
         - ApiKeyAuth: []
+        - BearerAuth: []
       parameters:
         - name: body
           in: body
           required: true
           schema:
-            $ref: '#/definitions/AdminLogin'
+            $ref: '#/definitions/NewAdmin'
+      responses:
+        201:
+          description: Admin created successfully
+        400:
+          description: Invalid input or user already exists
+  /admins/users:
+    get:
+      tags:
+        - Admin
+      summary: List all users (Admin)
+      description: Get a list of all users with optional search (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          type: string
+          required: false
+          description: Search term for filtering users
       responses:
         200:
-          description: Login successful
+          description: List of users
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/User'
+  /admins/users/{user_id}:
+    get:
+      tags:
+        - Admin
+      summary: Get user profile (Admin)
+      description: Get a specific user's profile (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: User profile
+          schema:
+            $ref: '#/definitions/User'
+        404:
+          description: User not found
+    delete:
+      tags:
+        - Admin
+      summary: Delete user account (Admin)
+      description: Permanently delete a user's account (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: User deleted successfully
+        403:
+          description: User cannot be deleted
+        404:
+          description: User not found
+  /admins/users/{user_id}/deactivate:
+    put:
+      tags:
+        - Admin
+      summary: Deactivate user account
+      description: Deactivate a user's account (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: User deactivated successfully
+        404:
+          description: User not found
+  /admins/users/{user_id}/reactivate:
+    put:
+      tags:
+        - Admin
+      summary: Reactivate user account
+      description: Reactivate a user's account (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: User reactivated successfully
+        404:
+          description: User not found
+  /admins/resources:
+    get:
+      tags:
+        - Admin
+      summary: List all resources (Admin)
+      description: Get a list of all resources, filterable by status (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          type: string
+          required: false
+          description: Filter by approval status
+      responses:
+        200:
+          description: List of resources
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Resource'
+  /admins/resources/{resource_id}/approve:
+    put:
+      tags:
+        - Admin
+      summary: Approve resource (Admin)
+      description: Approve a pending resource (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: resource_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: Resource approved successfully
+        400:
+          description: Invalid resource
+  /admins/resources/{resource_id}/reject:
+    put:
+      tags:
+        - Admin
+      summary: Reject resource (Admin)
+      description: Reject a pending resource (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: resource_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: Resource rejected successfully
+        400:
+          description: Invalid resource
+  /admins/events:
+    get:
+      tags:
+        - Admin
+      summary: List all events (Admin)
+      description: Get a list of all events, filterable by approval status (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          type: string
+          required: false
+          description: Filter by approval status (approved/pending)
+      responses:
+        200:
+          description: List of events
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Event'
+  /admins/events/{event_id}/approve:
+    put:
+      tags:
+        - Admin
+      summary: Approve event (Admin)
+      description: Approve a pending event (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: event_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: Event approved successfully
+        404:
+          description: Event not found
+  /admins/events/{event_id}/reject:
+    delete:
+      tags:
+        - Admin
+      summary: Reject event (Admin)
+      description: Reject and delete a pending event (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: event_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: Event rejected successfully
+        404:
+          description: Event not found
+  /admins/mentee-applications:
+    get:
+      tags:
+        - Admin
+      summary: List mentee applications (Admin)
+      description: List all mentee applications (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          type: string
+          required: false
+          description: Filter by status
+      responses:
+        200:
+          description: List of mentee applications
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MentorshipApplicationResponse'
+  /admins/mentee-applications/{app_id}/approve:
+    put:
+      tags:
+        - Admin
+      summary: Approve mentee application (Admin)
+      description: Approve a mentee application (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: app_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: Application approved successfully
+        404:
+          description: Application not found
+  /admins/mentee-applications/{app_id}/reject:
+    put:
+      tags:
+        - Admin
+      summary: Reject mentee application (Admin)
+      description: Reject a mentee application (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: app_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: Application rejected successfully
+        404:
+          description: Application not found
+  /admins/mentor-applications:
+    get:
+      tags:
+        - Admin
+      summary: List mentor applications (Admin)
+      description: List all mentor applications (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          type: string
+          required: false
+          description: Filter by status
+      responses:
+        200:
+          description: List of mentor applications
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/MentorApplicationResponse'
+  /admins/mentor-applications/{app_id}/approve:
+    put:
+      tags:
+        - Admin
+      summary: Approve mentor application (Admin)
+      description: Approve a mentor application (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: app_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: Application approved successfully
+        404:
+          description: Application not found
+  /admins/mentor-applications/{app_id}/reject:
+    put:
+      tags:
+        - Admin
+      summary: Reject mentor application (Admin)
+      description: Reject a mentor application (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: app_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: Application rejected successfully
+        404:
+  /admins/mentorship/pairings:
+    post:
+      tags:
+        - Admin
+      summary: Create mentorship pairing (Admin)
+      description: Create a mentorship pairing (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/MentorAssignment'
+      responses:
+        201:
+          description: Mentorship pairing created successfully
+          schema:
+            $ref: '#/definitions/MentorshipRelationship'
+        400:
+          description: Invalid input
+  /admins/feedback:
+    get:
+      tags:
+        - Admin
+      summary: List all feedback (Admin)
+      description: List all feedback entries (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          type: string
+          required: false
+          description: Filter by category
+        - name: status
+          in: query
+          type: string
+          required: false
+          description: Filter by status
+      responses:
+        200:
+          description: List of feedback entries
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Feedback'
+  /admins/feedback/{feedback_id}/status:
+    put:
+      tags:
+        - Admin
+      summary: Update feedback status (Admin)
+      description: Update the status of a feedback entry (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: feedback_id
+          in: path
+          type: integer
+          required: true
+        - name: body
+          in: body
+          required: true
           schema:
             type: object
             properties:
-              access_token:
+              status:
                 type: string
-        401:
-          description: Invalid credentials
+      responses:
+        200:
+          description: Feedback status updated successfully
+          schema:
+            $ref: '#/definitions/Feedback'
+        404:
+          description: Feedback not found
+  /admins/analytics/summary:
+    get:
+      tags:
+        - Admin
+      summary: Get platform summary stats (Admin)
+      description: Get platform summary statistics (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        200:
+          description: Platform summary statistics
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              stats:
+                type: object
+        500:
+          description: Internal server error
+  /admins/analytics/export/users.csv:
+    get:
+      tags:
+        - Admin
+      summary: Export users to CSV (Admin)
+      description: Export all users to a CSV file (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      produces:
+        - text/csv
+      responses:
+        200:
+          description: CSV file with users data
+        500:
+          description: Internal server error
+  /admins/analytics/export/summary.pdf:
+    get:
+      tags:
+        - Admin
+      summary: Export summary to PDF (Admin)
+      description: Export platform summary statistics to a PDF file (admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      produces:
+        - application/pdf
+      responses:
+        200:
+          description: PDF file with summary report
+        500:
+          description: Internal server error
+  /admins/audit-logs:
+    get:
+      tags:
+        - Admin
+      summary: Get audit logs (Super Admin)
+      description: Get all audit logs (super admin only).
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        200:
+          description: List of audit logs
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/AuditLog'
   /generate_api_key:
     post:
       tags:
@@ -841,6 +1498,8 @@ paths:
             $ref: '#/definitions/MentorshipApplicationResponse'
         400:
           description: Missing required fields
+        409:
+          description: Application already exists
         500:
           description: Internal server error
   /mentorship/apply-mentor:
