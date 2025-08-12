@@ -47,6 +47,8 @@ class MentorApplication(db.Model):
         return {
             'id': self.id,
             'applicant_id': self.applicant_id,
+            'applicant_name': f"{self.applicant.firstname} {self.applicant.lastname}" if self.applicant else None,
+            'applicant_email': self.applicant.email if self.applicant else None,
             'phone_no': self.phone_no,
             'academic_background': self.academic_background,
             'area_of_expertise': self.area_of_expertise,

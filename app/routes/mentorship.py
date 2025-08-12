@@ -17,6 +17,11 @@ def apply_for_mentorship():
     """Apply for mentorship as a student"""
     user_id = get_jwt_identity()
     data = request.get_json()
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
     if not data:
         return jsonify({'message': 'Request body must be JSON'}), 400
 
@@ -28,6 +33,7 @@ def apply_for_mentorship():
     try:
         application = MentorshipService.apply_for_mentorship(
             student_id=user_id,
+            student_name=f"{user.firstname} {user.lastname}",
             matric_no=data['matric_no'],
             level=data['level'],
             areas_of_interest=data['areas_of_interest']
@@ -45,10 +51,13 @@ def apply_for_mentorship():
 @api_key_required
 @jwt_required()
 def apply_to_be_mentor():
-    """Ap
-    ply to become a mentor"""
+    """Apply to become a mentor"""
     user_id = get_jwt_identity()
     data = request.get_json()
+  
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
 
     required_fields = ['phone_no', 'academic_background', 'area_of_expertise', 'preferred_mode']
     if not all(field in data for field in required_fields):
@@ -57,6 +66,8 @@ def apply_to_be_mentor():
     try:
         application, message = MentorshipService.apply_to_be_mentor(
             applicant_id=user_id,
+            applicant_name=f"{user.firstname} {user.lastname}",
+            applicant_email=user.email,
             phone_no=data['phone_no'],
             academic_background=data['academic_background'],
             area_of_expertise=data['area_of_expertise'],

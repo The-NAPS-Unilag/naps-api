@@ -23,11 +23,12 @@ user_bp = Blueprint('user_bp', __name__)
 
 
 
-@user_bp.route('/users/<int:user_id>', methods=['GET'])
+@user_bp.route('/users/me', methods=['GET'])
 @api_key_required
 @jwt_required()
-def get_user(user_id):
-    user = get_user_by_id(user_id)
+def get_current_user():
+    current_user_id = get_jwt_identity()
+    user = get_user_by_id(current_user_id)
     if user:
         user_schema = UserSchema()
         return user_schema.dump(user)
