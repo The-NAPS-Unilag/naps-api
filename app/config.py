@@ -15,11 +15,10 @@ class Development:
     MAIL_USERNAME = config("EMAIL_USER")
     MAIL_PASSWORD = config("EMAIL_PASSWORD")
 
-    # S3 Configuration
-    AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-    AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
-    AWS_REGION = config('AWS_REGION')
-    AWS_S3_BUCKET = config('AWS_S3_BUCKET')
+    # Cloudinary Configuration
+    CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME')
+    CLOUDINARY_API_KEY = config('CLOUDINARY_API_KEY')
+    CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET')
 
     # File upload settings
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB limit for file uploads
@@ -36,11 +35,10 @@ class Staging:
     MAIL_DEBUG = False
     MAIL_USERNAME = config("EMAIL_USER")
     MAIL_PASSWORD = config("EMAIL_PASSWORD")
-    # S3 Configuration
-    AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-    AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
-    AWS_REGION = config('AWS_REGION')
-    AWS_S3_BUCKET = config('AWS_S3_BUCKET')
+    # Cloudinary Configuration
+    CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME')
+    CLOUDINARY_API_KEY = config('CLOUDINARY_API_KEY')
+    CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET')
 
     # File upload settings
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB limit for file uploads
@@ -56,11 +54,10 @@ class Production:
     MAIL_DEBUG = False
     MAIL_USERNAME = config("EMAIL_USER")
     MAIL_PASSWORD = config("EMAIL_PASSWORD")
-    # S3 Configuration
-    AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-    AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
-    AWS_REGION = config('AWS_REGION')
-    AWS_S3_BUCKET = config('AWS_S3_BUCKET')
+    # Cloudinary Configuration
+    CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME')
+    CLOUDINARY_API_KEY = config('CLOUDINARY_API_KEY')
+    CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET')
 
     # File upload settings
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB limit for file uploads

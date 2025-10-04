@@ -11,7 +11,7 @@ from app.services.user_service import (filter_by_email,
     reset_password,
     get_mentor_by_mentee_id
 )
-from app.services.s3_service import upload_to_s3
+from app.services.cloudinary_service import upload_to_cloudinary
 from app.schemas.user_schema import UserSchema
 from app.extensions import db
 from werkzeug.security import check_password_hash
@@ -103,14 +103,14 @@ def create_new_user():
     departmental_fees_file = request.files.get('departmental_fees')
     departmental_fees_url = None
     if departmental_fees_file:
-        departmental_fees_url = upload_to_s3(departmental_fees_file, departmental_fees_file.filename)
+        departmental_fees_url = upload_to_cloudinary(departmental_fees_file, folder='departmental_fees')
         if not departmental_fees_url:
             return jsonify({'message': 'Failed to upload departmental fees picture.'}), 500
 
     profile_picture_file = request.files.get('profile_picture')
     profile_picture_url = None
     if profile_picture_file:
-        profile_picture_url = upload_to_s3(profile_picture_file, profile_picture_file.filename)
+        profile_picture_url = upload_to_cloudinary(profile_picture_file, folder='profile_pictures')
         if not profile_picture_url:
             return jsonify({'message': 'Failed to upload profile picture.'}), 500
 
@@ -279,7 +279,7 @@ def edit_existing_user(user_id):
     profile_picture_url = None
 
     if profile_picture_file:
-        profile_picture_url = upload_to_s3(profile_picture_file, profile_picture_file.filename)
+        profile_picture_url = upload_to_cloudinary(profile_picture_file, folder='profile_pictures')
         if not profile_picture_url:
             return jsonify({'message': 'Failed to upload profile picture.'}), 500
 

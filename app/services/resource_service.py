@@ -95,7 +95,7 @@ from app.models.resource import Resource
 from app.models.user import User
 from app.extensions import db
 from app.services.notification_service import send_email
-from app.services.s3_storage import S3Storage
+from app.services.cloudinary_service import CloudinaryStorage as S3Storage
 
 @dataclass
 class ResourceResult:

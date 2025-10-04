@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_socketio import emit, join_room, leave_room
 from app.services.forum_service import ForumService
-from app.services.s3_service import upload_to_s3
+from app.services.cloudinary_service import upload_to_cloudinary
 from sqlalchemy.exc import IntegrityError
 from app.models.user import User
 from app.socketio import socketio
@@ -107,7 +107,7 @@ def send_message(thread_id):
     if 'attachment' in request.files:
         file = request.files['attachment']
         if file.filename != '':
-            attachment_url = upload_to_s3(file, file.filename)
+            attachment_url = upload_to_cloudinary(file, folder='forum_attachments')
             if not attachment_url:
                 return jsonify({'message': 'Failed to upload attachment.'}), 500
 
