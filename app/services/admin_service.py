@@ -1,4 +1,3 @@
-from flask import jsonify
 from app.models.user import User
 from app.schemas.user_schema import UserSchema
 from app.extensions import db
