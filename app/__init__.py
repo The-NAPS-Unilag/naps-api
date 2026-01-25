@@ -26,12 +26,7 @@ def create_app(config_class='app.config.Development'):
     if cors_origins != '*':
         cors_origins = [origin.strip() for origin in cors_origins.split(',')]
     
-    CORS(app, 
-         origins=cors_origins,
-         supports_credentials=True,
-         allow_headers=['Content-Type', 'Authorization'],
-         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-    )
+    CORS(app)
 
     #from models import api_key, event, user
     db.init_app(app)
