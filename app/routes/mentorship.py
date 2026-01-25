@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
-from app.decorators.api_decorator import api_key_required
 from app.decorators.admin_decorator import admin_required
 from app.models import Mentorship
 from app.services.mentorship import MentorshipService
@@ -11,7 +10,6 @@ from app.models.user import User
 mentorship_bp = Blueprint('mentorship', __name__, url_prefix='/api/mentorship')
 
 @mentorship_bp.route('/apply', methods=['POST'])
-@api_key_required
 @jwt_required()
 def apply_for_mentorship():
     """Apply for mentorship as a student"""
@@ -48,7 +46,6 @@ def apply_for_mentorship():
         return jsonify({'message': f'An unexpected error occurred: {str(e)}'}), 500
 
 @mentorship_bp.route('/apply-mentor', methods=['POST'])
-@api_key_required
 @jwt_required()
 def apply_to_be_mentor():
     """Apply to become a mentor"""
@@ -85,7 +82,6 @@ def apply_to_be_mentor():
         return jsonify({'message': str(e)}), 500
 
 @mentorship_bp.route('/applications', methods=['GET'])
-@api_key_required
 @admin_required
 @jwt_required()
 def get_pending_applications():
@@ -100,7 +96,6 @@ def get_pending_applications():
     return jsonify([app.to_dict() for app in applications]), 200
 
 @mentorship_bp.route('/mentor-applications', methods=['GET'])
-@api_key_required
 @admin_required
 @jwt_required()
 def get_pending_mentor_applications():
@@ -115,7 +110,6 @@ def get_pending_mentor_applications():
     return jsonify([app.to_dict() for app in applications]), 200
 
 @mentorship_bp.route('/mentor-applications/<int:application_id>/approve', methods=['POST'])
-@api_key_required
 @admin_required
 @jwt_required()
 def approve_mentor_application(application_id):
@@ -136,7 +130,6 @@ def approve_mentor_application(application_id):
     }), 200
 
 @mentorship_bp.route('/mentor-applications/<int:application_id>/reject', methods=['POST'])
-@api_key_required
 @admin_required
 @jwt_required()
 def reject_mentor_application(application_id):
@@ -161,7 +154,6 @@ def reject_mentor_application(application_id):
     }), 200
 
 @mentorship_bp.route('/assign-mentor', methods=['POST'])
-@api_key_required
 @admin_required
 @jwt_required()
 def assign_mentor():
@@ -192,7 +184,6 @@ def assign_mentor():
     }), 201
 
 @mentorship_bp.route('/schedule-session', methods=['POST'])
-@api_key_required
 @jwt_required()
 def schedule_session():
     """Schedule a mentorship session"""
@@ -224,7 +215,6 @@ def schedule_session():
     }), 201
 
 @mentorship_bp.route('/submit-feedback', methods=['POST'])
-@api_key_required
 @jwt_required()
 def submit_feedback():
     """Submit feedback for a session"""
@@ -251,7 +241,6 @@ def submit_feedback():
     }), 201
 
 @mentorship_bp.route('/my-mentorships', methods=['GET'])
-@api_key_required
 @jwt_required()
 def get_my_mentorships():
     """Get user's mentorship relationships"""
@@ -267,7 +256,6 @@ def get_my_mentorships():
     }), 200
 
 @mentorship_bp.route('/mentorships/<int:mentorship_id>/sessions', methods=['GET'])
-@api_key_required
 @jwt_required()
 def get_mentorship_sessions(mentorship_id):
     """Get all sessions for a mentorship"""
@@ -282,7 +270,6 @@ def get_mentorship_sessions(mentorship_id):
     return jsonify([s.to_dict() for s in sessions]), 200
 
 @mentorship_bp.route('/mentorships/<int:mentorship_id>/complete', methods=['POST'])
-@api_key_required
 @jwt_required()
 def complete_mentorship(mentorship_id):
     """Mark a mentorship as completed"""

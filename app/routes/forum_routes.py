@@ -6,20 +6,17 @@ from app.services.cloudinary_service import upload_to_cloudinary
 from sqlalchemy.exc import IntegrityError
 from app.models.user import User
 from app.socketio import socketio
-from app.decorators.api_decorator import api_key_required
 from app.decorators.admin_decorator import admin_required
 
 forum_bp = Blueprint('forum', __name__, url_prefix='/api/forums')
 
 @forum_bp.route('/', methods=['GET'])
-@api_key_required
 def get_all_forums():
     """Get all forums."""
     forums = ForumService.get_all_forums()
     return jsonify([forum.to_dict() for forum in forums]), 200
 
 @forum_bp.route('/', methods=['POST'])
-@api_key_required
 @jwt_required()
 @admin_required
 def create_forum():
@@ -54,7 +51,6 @@ def create_forum():
         return jsonify({'message': f'An unexpected error occurred: {str(e)}'}), 500
 
 @forum_bp.route('/<int:forum_id>/join', methods=['POST'])
-@api_key_required
 @jwt_required()
 def join_forum(forum_id):
     """Join a forum."""
@@ -66,7 +62,6 @@ def join_forum(forum_id):
     return jsonify({'message': message}), 200
 
 @forum_bp.route('/<int:forum_id>/threads', methods=['POST'])
-@api_key_required
 @jwt_required()
 def create_thread(forum_id):
     """Create a new thread in a forum."""
@@ -79,7 +74,6 @@ def create_thread(forum_id):
     return jsonify({'message': 'Thread created successfully.', 'thread': thread.to_dict()}), 201
 
 @forum_bp.route('/threads/<int:thread_id>', methods=['GET'])
-@api_key_required
 @jwt_required()
 def get_thread(thread_id):
     """Get a specific thread and its messages."""
@@ -94,7 +88,6 @@ def get_thread(thread_id):
     }), 200
 
 @forum_bp.route('/threads/<int:thread_id>/messages', methods=['POST'])
-@api_key_required
 @jwt_required()
 def send_message(thread_id):
     """Send a message in a thread."""
@@ -130,21 +123,18 @@ def send_message(thread_id):
     return jsonify({'message': 'Message sent successfully.', 'message': message.to_dict()}), 200
 
 @forum_bp.route('/explore', methods=['GET'])
-@api_key_required
 def explore_forums():
     """Explore all available forums."""
     forums = ForumService.get_all_forums()
     return jsonify([forum.to_dict() for forum in forums]), 200
 
 @forum_bp.route('/recommended', methods=['GET'])
-@api_key_required
 def recommended_forums():
     """Get a list of recommended forums."""
     forums = ForumService.get_recommended_forums()
     return jsonify([forum.to_dict() for forum in forums]), 200
 
 @forum_bp.route('/top-contributors', methods=['GET'])
-@api_key_required
 def top_contributors():
     """Get a list of top contributors."""
     users = ForumService.get_top_contributors()
@@ -156,14 +146,12 @@ def top_contributors():
     } for user in users]), 200
 
 @forum_bp.route('/threads/<int:thread_id>/messages', methods=['GET'])
-@api_key_required
 def get_thread_messages(thread_id):
     """Get all messages in a thread."""
     messages = ForumService.get_thread_messages(thread_id)
     return jsonify([message.to_dict() for message in messages]), 200
 
 @forum_bp.route('/messages/<int:message_id>/like', methods=['POST'])
-@api_key_required
 @jwt_required()
 def like_message(message_id):
     """Like a message."""

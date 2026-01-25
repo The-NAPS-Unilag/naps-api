@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.decorators.api_decorator import api_key_required
 from datetime import datetime
 from app.services import event_service
 from sqlalchemy.exc import IntegrityError
@@ -24,7 +23,6 @@ def format_event_response(event):
     }
 
 @event_bp.route('/', methods=['GET'])
-@api_key_required
 @jwt_required()
 def get_all_events():
     """Get all approved events."""
@@ -37,7 +35,6 @@ def get_all_events():
     ]), HTTPStatus.OK
 
 @event_bp.route('/<int:event_id>', methods=['GET'])
-@api_key_required
 @jwt_required()
 def get_event(event_id):
     """Get details of a specific event."""
@@ -48,7 +45,6 @@ def get_event(event_id):
     return jsonify(format_event_response(result.data)), HTTPStatus.OK
 
 @event_bp.route('/', methods=['POST'])
-@api_key_required
 @jwt_required()
 def create_event():
     """Create a new event."""
@@ -89,7 +85,6 @@ def create_event():
         return jsonify({'message': f'An unexpected error occurred: {str(e)}'}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 @event_bp.route('/<int:event_id>/rsvp', methods=['POST'])
-@api_key_required
 @jwt_required()
 def rsvp_to_event(event_id):
     """RSVP to an event."""
@@ -103,7 +98,6 @@ def rsvp_to_event(event_id):
     }), HTTPStatus.OK
 
 @event_bp.route('/<int:event_id>/cancel_rsvp', methods=['POST'])
-@api_key_required
 @jwt_required()
 def cancel_rsvp(event_id):
     """Cancel an RSVP for an event."""
@@ -117,7 +111,6 @@ def cancel_rsvp(event_id):
     }), HTTPStatus.OK
 
 @event_bp.route('/type/<string:event_type>', methods=['GET'])
-@api_key_required
 @jwt_required()
 def get_events_by_type(event_type):
     """Get events filtered by type."""

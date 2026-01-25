@@ -1,12 +1,10 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services.feedback_service import create_feedback
-from app.decorators.api_decorator import api_key_required
 
 feedback_bp = Blueprint('feedback_bp', __name__, url_prefix='/api/feedback')
 
 @feedback_bp.route('/', methods=['POST'])
-@api_key_required
 @jwt_required()
 def submit_feedback():
     """Submit new feedback."""

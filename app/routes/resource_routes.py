@@ -5,7 +5,6 @@ from http import HTTPStatus
 from app.services import resource_service
 from sqlalchemy.exc import IntegrityError
 from app.decorators.admin_decorator import admin_required
-from app.decorators.api_decorator import api_key_required
 
 resource_bp = Blueprint('resource', __name__, url_prefix='/api/resources')
 
@@ -25,7 +24,6 @@ def format_resource_response(resource):
     }
 
 @resource_bp.route('/', methods=['POST'])
-@api_key_required
 @jwt_required()
 def upload_resource():
     """Upload a new resource."""
@@ -69,7 +67,6 @@ def upload_resource():
         return jsonify({'message': f'An unexpected error occurred: {str(e)}'}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 @resource_bp.route('/level/<string:level>', methods=['GET'])
-@api_key_required
 @jwt_required()
 def get_resources_by_level(level):
     """Get all approved resources for a specific level."""
@@ -82,7 +79,6 @@ def get_resources_by_level(level):
     ]), HTTPStatus.OK
 
 @resource_bp.route('/pending', methods=['GET'])
-@api_key_required
 @jwt_required()
 @admin_required
 def get_pending_resources():
@@ -96,7 +92,6 @@ def get_pending_resources():
     ]), HTTPStatus.OK
 
 @resource_bp.route('/<int:resource_id>/approve', methods=['POST'])
-@api_key_required
 @jwt_required()
 @admin_required
 def approve_resource(resource_id):
@@ -111,7 +106,6 @@ def approve_resource(resource_id):
     }), HTTPStatus.OK
 
 @resource_bp.route('/<int:resource_id>', methods=['DELETE'])
-@api_key_required
 @jwt_required()
 @admin_required
 def delete_resource(resource_id):

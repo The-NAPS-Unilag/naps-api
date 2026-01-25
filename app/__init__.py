@@ -14,11 +14,24 @@ from app.routes.feedback_routes import feedback_bp
 from app.socketio import socketio
 
 from flask_swagger_ui import get_swaggerui_blueprint
+import os
 
 def create_app(config_class='app.config.Development'):
     app = Flask(__name__)
-    CORS(app)
     app.config.from_object(config_class)
+    
+    # Configure CORS - use environment variable for allowed origins
+    # In production, set CORS_ORIGINS="https://yourdomain.com,https://www.yourdomain.com"
+    cors_origins = os.getenv('CORS_ORIGINS', '*')
+    if cors_origins != '*':
+        cors_origins = [origin.strip() for origin in cors_origins.split(',')]
+    
+    CORS(app, 
+         origins=cors_origins,
+         supports_credentials=True,
+         allow_headers=['Content-Type', 'Authorization'],
+         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    )
 
     #from models import api_key, event, user
     db.init_app(app)

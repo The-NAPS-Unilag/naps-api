@@ -16,7 +16,6 @@ from app.schemas.user_schema import UserSchema
 from app.extensions import db
 from werkzeug.security import check_password_hash
 from app.models.user import User
-from app.decorators.api_decorator import api_key_required
 from sqlalchemy.orm import Session
 
 user_bp = Blueprint('user_bp', __name__)
@@ -24,7 +23,6 @@ user_bp = Blueprint('user_bp', __name__)
 
 
 @user_bp.route('/users/me', methods=['GET'])
-@api_key_required
 @jwt_required()
 def get_current_user():
     current_user_id = get_jwt_identity()
@@ -37,7 +35,6 @@ def get_current_user():
 
 
 @user_bp.route('/users', methods=['GET'])
-@api_key_required
 @jwt_required()
 def list_all_users():
     page = request.args.get('page', 1, type=int)
@@ -59,7 +56,6 @@ def list_all_users():
 
 
 @user_bp.route('/users/confirm', methods=['POST'])
-@api_key_required
 def confirm_email():
     """Confirm user email with OTP"""
     data = request.get_json()
@@ -72,7 +68,6 @@ def confirm_email():
     return confirm_user_email(email, otp)
 
 @user_bp.route('/users/resend-otp', methods=['POST'])
-@api_key_required
 def resend_verification_otp():
     """Resend verification OTP"""
     data = request.get_json()
@@ -88,7 +83,6 @@ def resend_verification_otp():
     return send_verification_email(user)
 
 @user_bp.route('/users', methods=['POST'])
-@api_key_required
 def create_new_user():
     """Create new user account"""
     # Use request.form for form data and request.files for files
@@ -136,7 +130,6 @@ def create_new_user():
         return jsonify({'message': f'An unexpected error occurred: {str(e)}'}), 500
 
 @user_bp.route('/users/login', methods=['POST'])
-@api_key_required
 def login_user():
     """User login with email and password"""
     data = request.get_json()
@@ -191,7 +184,6 @@ def login_user():
 
 
 @user_bp.route('users/login/matric', methods=['POST'])
-@api_key_required
 def login_user_matric():
     data = request.get_json()
 
@@ -233,6 +225,7 @@ def login_user_matric():
 
 
 
+
 """
 @user_bp.route('/users/onboard/<int:user_id>', methods=['PUT'])
 def onboard_new_user(user_id):
@@ -262,7 +255,6 @@ def onboard_new_user(user_id):
 
 
 @user_bp.route('/users/update/<int:user_id>', methods=['PUT'])
-@api_key_required
 @jwt_required()
 def edit_existing_user(user_id):
 
@@ -293,7 +285,6 @@ def edit_existing_user(user_id):
     return jsonify({'message': 'Edited Successful'}), 200
 
 @user_bp.route('/users/forgot-password', methods=['POST'])
-@api_key_required
 def forget_user_password():
 
     data = request.get_json()
@@ -305,7 +296,6 @@ def forget_user_password():
     return initiate_password_reset(email)
 
 @user_bp.route('/users/reset-password', methods=['POST'])
-@api_key_required
 def reset_password_with_otp():
 
     data = request.get_json()
@@ -319,7 +309,6 @@ def reset_password_with_otp():
     return reset_password(email, otp, new_password)
 
 @user_bp.route('/users/delete/<int:user_id>', methods=['DELETE'])
-@api_key_required
 @jwt_required()
 def delete_existing_user(user_id):
 
