@@ -18,18 +18,22 @@ import os
 def create_app(config_class='app.config.Development'):
     app = Flask(__name__)
     app.config.from_object(config_class)
-    
-    # Configure CORS - use environment variable for allowed origins
-    # In production, set CORS_ORIGINS="https://yourdomain.com,https://www.yourdomain.com"
-    cors_origins = os.getenv('CORS_ORIGINS', '*')
-    if cors_origins != '*':
-        cors_origins = [origin.strip() for origin in cors_origins.split(',')]
-    else:
-        # Default development origins
-        cors_origins = ["http://localhost:5173", "http://localhost:3000", "*"]
 
-    CORS(app, resources={r"/*": {"origins": cors_origins}}, supports_credentials=True)
-
+    CORS(
+        app,
+        resources={
+            r"/api/*": {
+                "origins": [
+                    "http://localhost:5173",
+                    "https://naps.odamarketplace.com",
+                    "http://192.168.0.163:5173",
+                ],
+                "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+                "allow_headers": ["Content-Type", "Authorization"],
+                "supports_credentials": True,
+            }
+        },
+    )
     #from models import api_key, event, user
     db.init_app(app)
     ma.init_app(app)
