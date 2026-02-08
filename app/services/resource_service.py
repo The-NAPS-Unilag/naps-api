@@ -125,6 +125,12 @@ def validate_file(file: FileStorage) -> Tuple[bool, Optional[str]]:
 
     return True, None
 
+def upload_file(file: FileStorage) -> ResourceResult:
+    upload_result = S3Storage.upload_file(file)
+    if not upload_result.success:
+        return ResourceResult(success=False, error=upload_result.error)
+    return ResourceResult(success=True, data=upload_result.file_url)
+
 def upload_resource(file, resource_data):
     # Upload file to S3
     upload_result = S3Storage.upload_file(file)
@@ -173,7 +179,7 @@ def get_resources_by_level(level: str) -> ResourceResult:
     try:
         resources = Resource.query.filter_by(
             level=level,
-            is_approved=True
+            status='approved'
         ).all()
         return ResourceResult(success=True, data=resources)
     except SQLAlchemyError as e:
@@ -182,7 +188,7 @@ def get_resources_by_level(level: str) -> ResourceResult:
 def get_pending_resources() -> ResourceResult:
     """Get all resources pending approval."""
     try:
-        resources = Resource.query.filter_by(is_approved=False).all()
+        resources = Resource.query.filter_by(status='pending').all()
         return ResourceResult(success=True, data=resources)
     except SQLAlchemyError as e:
         return ResourceResult(success=False, error=str(e))

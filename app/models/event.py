@@ -10,6 +10,7 @@ class Event(db.Model):
     location = db.Column(db.String(200), nullable=False)
     event_type = db.Column(db.String(50), nullable=False)  # e.g., seminar, workshop, webinar
     capacity = db.Column(db.Integer, nullable=False)  # Maximum number of attendees
+    image_url = db.Column(db.String(500), nullable=True)  # Optional event image
     is_approved = db.Column(db.Boolean, default=False)  # Whether the event is approved by admins
     is_open_for_registration = db.Column(db.Boolean, default=True)  # Whether RSVPs are allowed
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # User who proposed the event

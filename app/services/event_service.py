@@ -204,3 +204,16 @@ def get_events_by_type(event_type: str) -> EventResult:
         return EventResult(success=True, data=events)
     except SQLAlchemyError as e:
         return EventResult(success=False, error=str(e))
+
+def get_events_for_user_rsvps(user_id: int) -> EventResult:
+    """Get all events the user has RSVP'd to."""
+    try:
+        events = (
+            Event.query
+            .join(RSVP, RSVP.event_id == Event.id)
+            .filter(RSVP.user_id == user_id)
+            .all()
+        )
+        return EventResult(success=True, data=events)
+    except SQLAlchemyError as e:
+        return EventResult(success=False, error=str(e))

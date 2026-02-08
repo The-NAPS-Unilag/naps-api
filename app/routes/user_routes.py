@@ -17,6 +17,7 @@ from app.extensions import db
 from werkzeug.security import check_password_hash
 from app.models.user import User
 from sqlalchemy.orm import Session
+from app.services.user_activity_service import create_activity, get_user_activity
 
 user_bp = Blueprint('user_bp', __name__)
 
@@ -183,7 +184,7 @@ def login_user():
 
 
 
-@user_bp.route('users/login/matric', methods=['POST'])
+@user_bp.route('/users/login/matric', methods=['POST'])
 def login_user_matric():
     data = request.get_json()
 
@@ -282,7 +283,34 @@ def edit_existing_user(user_id):
         bio=bio
     )
 
+    create_activity(
+        user_id=current_user_id,
+        action='profile_updated',
+        description='Updated profile information'
+    )
+
     return jsonify({'message': 'Edited Successful'}), 200
+
+@user_bp.route('/users/<int:user_id>/activity', methods=['GET'])
+@jwt_required()
+def get_user_activity_feed(user_id):
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if not current_user:
+        return jsonify({'message': 'User not found'}), 404
+
+    if current_user_id != user_id and not (current_user.is_admin or current_user.is_super_admin):
+        return jsonify({'message': 'Permission denied'}), 403
+
+    limit = request.args.get('limit', 20, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    result = get_user_activity(user_id=user_id, limit=limit, offset=offset)
+    if not result.success:
+        return jsonify({'message': result.error}), 500
+
+    return jsonify({
+        'activities': [activity.to_dict() for activity in result.data]
+    }), 200
 
 @user_bp.route('/users/forgot-password', methods=['POST'])
 def forget_user_password():

@@ -1,10 +1,12 @@
 from flask import Blueprint, request, jsonify, current_app
+import os
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 from http import HTTPStatus
 from app.services import resource_service
 from sqlalchemy.exc import IntegrityError
 from app.decorators.admin_decorator import admin_required
+from app.services.user_activity_service import create_activity
 
 resource_bp = Blueprint('resource', __name__, url_prefix='/api/resources')
 
@@ -17,11 +19,26 @@ def format_resource_response(resource):
         'course_title': resource.course_title,
         'level': resource.level,
         'file_url': resource.file_url,
+        'file_type': resource.file_type,
+        'file_size': resource.file_size,
         'contributors': resource.contributors,
         'uploaded_by': resource.uploaded_by,
-        'is_approved': resource.is_approved,
-        'created_at': resource.created_at.isoformat()
+        'status': resource.status,
+        'is_approved': resource.status == 'approved',
+        'created_at': resource.uploaded_on.isoformat()
     }
+
+def _get_file_size(file):
+    if file.content_length is not None:
+        return file.content_length
+    try:
+        current_pos = file.stream.tell()
+        file.stream.seek(0, os.SEEK_END)
+        size = file.stream.tell()
+        file.stream.seek(current_pos)
+        return size
+    except Exception:
+        return None
 
 @resource_bp.route('/', methods=['POST'])
 @jwt_required()
@@ -44,18 +61,32 @@ def upload_resource():
         return jsonify({'message': upload_result.error}), HTTPStatus.BAD_REQUEST
 
     try:
+        filename = file.filename or ''
+        file_type = filename.rsplit('.', 1)[1].lower() if '.' in filename else None
+        file_size = _get_file_size(file)
+        if file.stream:
+            file.stream.seek(0)
+
         resource_data = {
             'title': request.form['title'],
             'author': request.form['author'],
             'course_title': request.form['course_title'],
             'level': request.form['level'],
             'file_url': upload_result.data,
+            'file_type': file_type,
+            'file_size': file_size,
             'contributors': request.form.getlist('contributors'),
             'uploaded_by': get_jwt_identity()
         }
         result = resource_service.create_resource(resource_data)
         if not result.success:
             return jsonify({'message': result.error}), HTTPStatus.BAD_REQUEST
+
+        create_activity(
+            user_id=get_jwt_identity(),
+            action='resource_uploaded',
+            description=f"Uploaded resource: {result.data.title}"
+        )
 
         return jsonify({
             'message': 'Resource uploaded successfully',

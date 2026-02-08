@@ -1,5 +1,7 @@
 # Complete API Documentation
 
+For full route reference, see `docs/API_ROUTES.md`.
+
 ## Getting Started
 
 ### Base URL
@@ -29,7 +31,6 @@ Most endpoints require two things:
 **Response (200):**
 ```html
 <p>Hello, developers! All routes start with /api.</p>
-<p>You can view the <a href="/api/docs">Swagger docs here</a>.</p>
 ```
 
 ---

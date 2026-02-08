@@ -4,10 +4,12 @@ from datetime import datetime
 from app.services import event_service
 from sqlalchemy.exc import IntegrityError
 from http import HTTPStatus
+from app.services.cloudinary_service import upload_to_cloudinary
+from app.services.user_activity_service import create_activity
 
 event_bp = Blueprint('event', __name__, url_prefix='/api/events')
 
-def format_event_response(event):
+def format_event_response(event, user_id=None):
     """Helper function to format event data for response."""
     return {
         'id': event.id,
@@ -18,8 +20,10 @@ def format_event_response(event):
         'location': event.location,
         'event_type': event.event_type,
         'capacity': event.capacity,
+        'image_url': event.image_url,
         'rsvp_count': len(event.rsvps),
-        'is_open_for_registration': event.is_open_for_registration
+        'is_open_for_registration': event.is_open_for_registration,
+        'user_has_rsvpd': event.get_rsvp_status_for_user(user_id) if user_id else False
     }
 
 @event_bp.route('/', methods=['GET'])
@@ -30,8 +34,9 @@ def get_all_events():
     if not result.success:
         return jsonify({'message': result.error}), HTTPStatus.INTERNAL_SERVER_ERROR
 
+    user_id = get_jwt_identity()
     return jsonify([
-        format_event_response(event) for event in result.data
+        format_event_response(event, user_id) for event in result.data
     ]), HTTPStatus.OK
 
 @event_bp.route('/<int:event_id>', methods=['GET'])
@@ -42,15 +47,25 @@ def get_event(event_id):
     if not result.success:
         return jsonify({'message': result.error}), HTTPStatus.NOT_FOUND
 
-    return jsonify(format_event_response(result.data)), HTTPStatus.OK
+    user_id = get_jwt_identity()
+    return jsonify(format_event_response(result.data, user_id)), HTTPStatus.OK
 
 @event_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_event():
     """Create a new event."""
-    data = request.get_json()
-    if not data:
-        return jsonify({'message': 'Request body must be JSON'}), HTTPStatus.BAD_REQUEST
+    data = request.get_json(silent=True)
+    image_url = None
+
+    if request.content_type and request.content_type.startswith('multipart/form-data'):
+        data = request.form.to_dict()
+        image_file = request.files.get('image')
+        if image_file:
+            image_url = upload_to_cloudinary(image_file, folder='event_images')
+            if not image_url:
+                return jsonify({'message': 'Failed to upload event image.'}), HTTPStatus.INTERNAL_SERVER_ERROR
+    elif not data:
+        return jsonify({'message': 'Request body must be JSON or multipart/form-data'}), HTTPStatus.BAD_REQUEST
 
     required_fields = ['name', 'description', 'date', 'time', 'location', 'event_type', 'capacity']
     for field in required_fields:
@@ -66,6 +81,7 @@ def create_event():
             'location': data['location'],
             'event_type': data['event_type'],
             'capacity': int(data['capacity']),
+            'image_url': image_url or data.get('image_url'),
             'created_by': get_jwt_identity()
         }
         result = event_service.create_event(event_data)
@@ -91,6 +107,12 @@ def rsvp_to_event(event_id):
     result = event_service.rsvp_to_event(event_id, get_jwt_identity())
     if not result.success:
         return jsonify({'message': result.error}), HTTPStatus.BAD_REQUEST
+
+    create_activity(
+        user_id=get_jwt_identity(),
+        action='event_rsvp',
+        description=f"RSVP'd to event: {result.data.name}"
+    )
 
     return jsonify({
         'event_id': result.data.id,
@@ -118,9 +140,23 @@ def get_events_by_type(event_type):
     if not result.success:
         return jsonify({'message': result.error}), HTTPStatus.INTERNAL_SERVER_ERROR
 
+    user_id = get_jwt_identity()
     return jsonify([
-        format_event_response(event) for event in result.data
+        format_event_response(event, user_id) for event in result.data
     ]), HTTPStatus.OK
+
+@event_bp.route('/user-rsvps', methods=['GET'])
+@jwt_required()
+def get_user_rsvps():
+    """Get events the current user has RSVP'd to."""
+    user_id = get_jwt_identity()
+    result = event_service.get_events_for_user_rsvps(user_id)
+    if not result.success:
+        return jsonify({'message': result.error}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+    return jsonify({
+        'events': [format_event_response(event, user_id) for event in result.data]
+    }), HTTPStatus.OK
 
 @event_bp.errorhandler(Exception)
 def handle_error(e):

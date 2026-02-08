@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
 from app.decorators.admin_decorator import admin_required
 from app.models import Mentorship
+from app.models.mentorship import MentorApplication
 from app.services.mentorship import MentorshipService
 from sqlalchemy.exc import IntegrityError
 from app.models.user import User
@@ -56,8 +57,9 @@ def apply_to_be_mentor():
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
-    required_fields = ['phone_no', 'academic_background', 'area_of_expertise', 'preferred_mode']
-    if not all(field in data for field in required_fields):
+    area_of_expertise = data.get('area_of_expertise') or data.get('current_level')
+    required_fields = ['academic_background', 'preferred_mode']
+    if not all(field in data for field in required_fields) or not area_of_expertise:
         return jsonify({'message': 'Missing required fields'}), 400
 
     try:
@@ -65,10 +67,11 @@ def apply_to_be_mentor():
             applicant_id=user_id,
             applicant_name=f"{user.firstname} {user.lastname}",
             applicant_email=user.email,
-            phone_no=data['phone_no'],
+            phone_no=data.get('phone_no'),
             academic_background=data['academic_background'],
-            area_of_expertise=data['area_of_expertise'],
-            preferred_mode=data['preferred_mode']
+            area_of_expertise=area_of_expertise,
+            preferred_mode=data['preferred_mode'],
+            areas_of_interest=data.get('areas_of_interest')
         )
 
         if not application:
@@ -251,9 +254,18 @@ def get_my_mentorships():
     as_mentee = MentorshipService.get_mentee_mentorships(user_id)
 
     return jsonify({
-        'as_mentor': [m.to_dict() for m in as_mentor],
-        'as_mentee': [m.to_dict() for m in as_mentee]
+        'as_mentor': [_format_mentorship(m) for m in as_mentor],
+        'as_mentee': [_format_mentorship(m) for m in as_mentee]
     }), 200
+
+def _format_mentorship(mentorship):
+    mentor_app = MentorApplication.query.filter_by(
+        applicant_id=mentorship.mentor_id,
+        status='approved'
+    ).order_by(MentorApplication.created_at.desc()).first()
+    data = mentorship.to_dict()
+    data['area_of_expertise'] = mentor_app.area_of_expertise if mentor_app else None
+    return data
 
 @mentorship_bp.route('/mentorships/<int:mentorship_id>/sessions', methods=['GET'])
 @jwt_required()

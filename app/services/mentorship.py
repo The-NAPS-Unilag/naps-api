@@ -10,6 +10,51 @@ from app import mail
 class MentorshipService:
     # --- Mentee Application Services ---
     @staticmethod
+    def apply_for_mentorship(student_id, student_name, matric_no, level, areas_of_interest):
+        """Create a mentee mentorship application."""
+        try:
+            application = MentorshipApplication(
+                student_id=student_id,
+                matric_no=matric_no,
+                level=level,
+                areas_of_interest=areas_of_interest
+            )
+            db.session.add(application)
+            db.session.commit()
+            return application
+        except SQLAlchemyError:
+            db.session.rollback()
+            raise
+
+    @staticmethod
+    def apply_to_be_mentor(
+        applicant_id,
+        applicant_name,
+        applicant_email,
+        phone_no,
+        academic_background,
+        area_of_expertise,
+        preferred_mode,
+        areas_of_interest=None
+    ):
+        """Create a mentor application."""
+        try:
+            application = MentorApplication(
+                applicant_id=applicant_id,
+                phone_no=phone_no,
+                academic_background=academic_background,
+                area_of_expertise=area_of_expertise,
+                areas_of_interest=areas_of_interest,
+                preferred_mode=preferred_mode
+            )
+            db.session.add(application)
+            db.session.commit()
+            return application, "Mentor application submitted successfully."
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            return None, f"Database error: {str(e)}"
+
+    @staticmethod
     def get_all_mentee_applications(status=None):
         """Get all mentee applications, filterable by status."""
         query = MentorshipApplication.query

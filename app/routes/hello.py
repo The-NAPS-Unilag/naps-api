@@ -8,7 +8,6 @@ hello_bp = Blueprint('hello_bp', __name__)
 def hello_devs():
     message = (
         '<p>Hello, developers! All routes start with /api.</p>'
-        '<p>You can view the <a href="/api/docs">Swagger docs here</a>.</p>'
     )
     return render_template_string(message)
 

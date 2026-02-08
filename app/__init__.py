@@ -13,7 +13,6 @@ from app.routes.feedback_routes import feedback_bp
 
 from app.socketio import socketio
 
-from flask_swagger_ui import get_swaggerui_blueprint
 import os
 
 def create_app(config_class='app.config.Development'):
@@ -44,18 +43,6 @@ def create_app(config_class='app.config.Development'):
     app.register_blueprint(forum_bp)
     app.register_blueprint(mentorship_bp)
     app.register_blueprint(feedback_bp)
-
-    # swagger setup
-    SWAGGER_URL = '/api/docs'
-    API_URL = '/static/swagger.yaml'
-    swaggerui_blueprint = get_swaggerui_blueprint(
-        SWAGGER_URL,
-        API_URL,
-        config={
-            'app_name': "NAPS API"
-        }
-    )
-    app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
     socketio.init_app(app, cors_allowed_origins="*")
     return app

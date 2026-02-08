@@ -33,9 +33,10 @@ class MentorApplication(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     applicant_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    phone_no = db.Column(db.String(20), nullable=False)
+    phone_no = db.Column(db.String(20), nullable=True)
     academic_background = db.Column(db.String(500), nullable=False)
     area_of_expertise = db.Column(db.String(500), nullable=False)
+    areas_of_interest = db.Column(db.String(500), nullable=True)
     preferred_mode = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20), default='pending')  # pending, approved, rejected
     created_at = db.Column(db.DateTime, default=datetime)
@@ -52,6 +53,7 @@ class MentorApplication(db.Model):
             'phone_no': self.phone_no,
             'academic_background': self.academic_background,
             'area_of_expertise': self.area_of_expertise,
+            'areas_of_interest': self.areas_of_interest,
             'preferred_mode': self.preferred_mode,
             'status': self.status,
             'created_at': self.created_at.isoformat(),
