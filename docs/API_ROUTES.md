@@ -1,348 +1,420 @@
 # NAPS API Routes (Frontend Integration)
 
-This document is generated from the current Flask route implementations in `app/routes/`.
+This document is the authoritative, frontend-facing route reference derived from the current Flask implementation in `app/routes/`.
 
 **Base URL**
 All API routes are mounted under `/api`, except the root `/` and `/health` routes.
 
+**Content Types**
+- JSON endpoints: `Content-Type: application/json`
+- File uploads: `Content-Type: multipart/form-data`
+
 **Auth Overview**
 - JWT auth uses the `Authorization` header: `Bearer <access_token>`.
 - Admin endpoints require both JWT and a valid API key header: `x-api-key: <key>`.
-- Some endpoints require admin or super-admin privileges in addition to JWT.
+- Some admin endpoints require super-admin privileges.
 
-**Public Utility**
+**Standard Error Responses**
+- 400: invalid or missing input
+- 401: authentication failed or missing
+- 403: permission denied
+- 404: resource not found
+- 409: conflict (e.g., duplicate unique field)
+- 500: server error
+
+---
+
+## Public Utility
+
 `GET /`
 Returns a simple HTML message.
 
 `GET /health`
-Health check. Returns JSON with `status`, `timestamp`, `service`, `database`. Returns 200 when DB is healthy, 503 otherwise.
+Returns `{ status, timestamp, service, database }`.
+- 200 if DB is healthy
+- 503 if DB is unhealthy
 
-**Users**
-`GET /api/users/me`
-Auth: JWT
-Response: current user (serialized by `UserSchema`) or 404.
+---
 
-`GET /api/users`
-Auth: JWT
-Query: `page` (int, default 1), `per_page` (int, default 10)
-Response: `{ users: [...], total, pages, current_page }`
+## Authentication + Users
 
 `POST /api/users`
-Auth: none
-Consumes: `multipart/form-data`
-Required form fields: `firstname`, `lastname`, `email`, `current_level`, `matric_no`, `password`
-Optional files: `departmental_fees`, `profile_picture`
-Response: new user or error.
-Notes: Uploads files to Cloudinary if present.
+Creates a user.
+- Auth: none
+- Content-Type: `multipart/form-data`
+- Required fields: `firstname`, `lastname`, `email`, `current_level`, `matric_no`, `password`
+- Optional files: `departmental_fees`, `profile_picture`
+
+Request example:
+```bash
+curl -X POST /api/users \
+  -F firstname=John \
+  -F lastname=Doe \
+  -F email=john@example.com \
+  -F current_level=300 \
+  -F matric_no=CSC/2021/001 \
+  -F password=securepassword \
+  -F profile_picture=@/path/to/pic.jpg
+```
 
 `POST /api/users/confirm`
-Auth: none
-Body: JSON `{ email, otp }`
-Response: whatever `confirm_user_email` returns.
+Confirms email with OTP.
+- Auth: none
+- Body: `{ email, otp }`
 
 `POST /api/users/resend-otp`
-Auth: none
-Body: JSON `{ email }`
-Response: resend status or 404 if user not found.
+Resends verification OTP.
+- Auth: none
+- Body: `{ email }`
 
 `POST /api/users/login`
-Auth: none
-Body: JSON `{ email, password }`
-Response: `{ access_token, user }` or 401.
-Notes: Rejects if email not confirmed.
+Email + password login.
+- Auth: none
+- Body: `{ email, password }`
+- Response: `{ access_token, user }`
+- Note: returns 403 if email not confirmed
 
 `POST /api/users/login/matric`
-Auth: none
-Body: JSON `{ matric_no, password }`
-Response: `{ access_token, user }` or 401.
+Matric + password login.
+- Auth: none
+- Body: `{ matric_no, password }`
+- Response: `{ access_token, user }`
 
-`GET /api/users/<user_id>/activity`
-Auth: JWT (self or admin)
-Query: `limit` (int, default 20), `offset` (int, default 0)
-Response: `{ activities: [{ id, action, description, created_at }] }`
+`GET /api/users/me`
+Returns current user details.
+- Auth: JWT
+
+`GET /api/users`
+Returns paginated users.
+- Auth: JWT
+- Query: `page` (default 1), `per_page` (default 10)
+- Response: `{ users, total, pages, current_page }`
 
 `PUT /api/users/update/<user_id>`
-Auth: JWT
-Consumes: `multipart/form-data`
-Required: user must match JWT identity.
-Body fields: `current_level` (optional), `bio` (optional), `profile_picture` (file, optional)
-Response: `{ message: 'Edited Successful' }`
-
-`POST /api/users/forgot-password`
-Auth: none
-Body: JSON `{ email }`
-Response: whatever `initiate_password_reset` returns.
-
-`POST /api/users/reset-password`
-Auth: none
-Body: JSON `{ email, otp, new_password }`
-Response: whatever `reset_password` returns.
+Updates current user profile (self only).
+- Auth: JWT
+- Content-Type: `multipart/form-data`
+- Fields: `current_level?`, `bio?`, `profile_picture?`
 
 `DELETE /api/users/delete/<user_id>`
-Auth: JWT
-Required: user must match JWT identity.
-Response: `{ message: 'Delete Successful' }`
+Deletes current user (self only).
+- Auth: JWT
 
-**API Key Management**
+`POST /api/users/forgot-password`
+Initiates password reset.
+- Auth: none
+- Body: `{ email }`
+
+`POST /api/users/reset-password`
+Resets password by OTP.
+- Auth: none
+- Body: `{ email, otp, new_password }`
+
+`GET /api/users/<user_id>/activity`
+Returns activity feed for a user.
+- Auth: JWT (self or admin)
+- Query: `limit` (default 20), `offset` (default 0)
+
+Response example:
+```json
+{
+  "activities": [
+    {
+      "id": 12,
+      "user_id": 5,
+      "action": "profile_updated",
+      "description": "Updated profile information",
+      "created_at": "2026-02-08T10:12:45.123456"
+    }
+  ]
+}
+```
+
+---
+
+## API Key Management
+
 `POST /api/generate_api_key`
-Auth: JWT + Admin
-Response: `{ message, api_key }`
+Generates API key.
+- Auth: JWT + Admin
+- Response: `{ message, api_key }`
 
 `POST /api/test_generate_api_key`
-Auth: none
-Response: `{ message, api_key }`
-Notes: Marked as unsafe in code comment.
+Unsafe test key generation.
+- Auth: none
 
 `GET /api/api_keys`
-Auth: JWT + Admin
-Response: list of API keys.
+Lists API keys.
+- Auth: JWT + Admin
 
 `DELETE /api/api_keys/<api_key_id>`
-Auth: JWT + Admin
-Response: `{ message }`
+Deletes API key.
+- Auth: JWT + Admin
 
-**Admins**
+---
+
+## Admins
+
 All `/api/admins/*` routes require `x-api-key` + JWT unless noted.
 
 `POST /api/admins/login`
-Auth: `x-api-key` only
-Body: JSON `{ email, password }`
-Response: `{ access_token }` or 401.
+Admin login.
+- Auth: `x-api-key` only
+- Body: `{ email, password }`
+- Response: `{ access_token }`
 
 `POST /api/admins/super-admin`
-Auth: `x-api-key` + JWT + Super Admin
-Body: JSON `{ email, password, firstname, lastname }`
-Response: `{ message, user_id }`
+Creates super admin.
+- Auth: `x-api-key` + JWT + Super Admin
+- Body: `{ email, password, firstname, lastname }`
 
 `POST /api/admins/admin`
-Auth: `x-api-key` + JWT + Super Admin
-Body: JSON `{ email, password, firstname, lastname }`
-Response: `{ message, user_id }`
+Creates admin.
+- Auth: `x-api-key` + JWT + Super Admin
+- Body: `{ email, password, firstname, lastname }`
 
 `GET /api/admins/users/<user_id>`
-Auth: `x-api-key` + JWT + Admin
-Response: user profile or 404.
+Gets a user.
+- Auth: `x-api-key` + JWT + Admin
 
 `GET /api/admins/users`
-Auth: `x-api-key` + JWT + Admin
-Query: `search` (optional)
-Response: list of users.
+Lists users.
+- Auth: `x-api-key` + JWT + Admin
+- Query: `search?`
 
 `PUT /api/admins/users/<user_id>/deactivate`
-Auth: `x-api-key` + JWT + Admin
-Response: `{ message }`
+Deactivates user.
+- Auth: `x-api-key` + JWT + Admin
 
 `PUT /api/admins/users/<user_id>/reactivate`
-Auth: `x-api-key` + JWT + Admin
-Response: `{ message }`
+Reactivates user.
+- Auth: `x-api-key` + JWT + Admin
 
 `DELETE /api/admins/users/<user_id>`
-Auth: `x-api-key` + JWT + Admin
-Response: `{ message }`
+Deletes user.
+- Auth: `x-api-key` + JWT + Admin
 
 `GET /api/admins/resources`
-Auth: `x-api-key` + JWT + Admin
-Query: `status` (optional)
-Response: list of resources.
+Lists resources.
+- Auth: `x-api-key` + JWT + Admin
+- Query: `status?` (pending, approved, rejected)
 
 `PUT /api/admins/resources/<resource_id>/approve`
-Auth: `x-api-key` + JWT + Admin
-Response: `{ message, resource }`
+Approves resource.
+- Auth: `x-api-key` + JWT + Admin
 
 `PUT /api/admins/resources/<resource_id>/reject`
-Auth: `x-api-key` + JWT + Admin
-Response: `{ message, resource }`
+Rejects resource.
+- Auth: `x-api-key` + JWT + Admin
 
 `GET /api/admins/events`
-Auth: `x-api-key` + JWT + Admin
-Query: `status` = `approved` or `pending` (optional)
-Response: list of events.
+Lists events.
+- Auth: `x-api-key` + JWT + Admin
+- Query: `status?` (approved, pending)
 
 `PUT /api/admins/events/<event_id>/approve`
-Auth: `x-api-key` + JWT + Admin
-Response: `{ message, event }`
+Approves event.
+- Auth: `x-api-key` + JWT + Admin
 
 `DELETE /api/admins/events/<event_id>/reject`
-Auth: `x-api-key` + JWT + Admin
-Response: `{ message }`
+Rejects event.
+- Auth: `x-api-key` + JWT + Admin
 
 `GET /api/admins/mentee-applications`
-Auth: `x-api-key` + JWT + Admin
-Query: `status` (optional)
-Response: list of mentee applications.
+Lists mentee applications.
+- Auth: `x-api-key` + JWT + Admin
+- Query: `status?`
 
 `PUT /api/admins/mentee-applications/<app_id>/approve`
-Auth: `x-api-key` + JWT + Admin
-Response: `{ message, application }`
+Approves mentee application.
+- Auth: `x-api-key` + JWT + Admin
 
 `PUT /api/admins/mentee-applications/<app_id>/reject`
-Auth: `x-api-key` + JWT + Admin
-Response: `{ message, application }`
+Rejects mentee application.
+- Auth: `x-api-key` + JWT + Admin
 
 `GET /api/admins/mentor-applications`
-Auth: `x-api-key` + JWT + Admin
-Query: `status` (optional)
-Response: list of mentor applications.
+Lists mentor applications.
+- Auth: `x-api-key` + JWT + Admin
+- Query: `status?`
 
 `PUT /api/admins/mentor-applications/<app_id>/approve`
-Auth: `x-api-key` + JWT + Admin
-Response: `{ message, application }`
+Approves mentor application.
+- Auth: `x-api-key` + JWT + Admin
 
 `PUT /api/admins/mentor-applications/<app_id>/reject`
-Auth: `x-api-key` + JWT + Admin
-Response: `{ message, application }`
+Rejects mentor application.
+- Auth: `x-api-key` + JWT + Admin
 
 `POST /api/admins/mentorship/pairings`
-Auth: `x-api-key` + JWT + Admin
-Body: JSON `{ mentor_id, mentee_id }`
-Response: `{ message, mentorship }`
+Creates mentorship pairing.
+- Auth: `x-api-key` + JWT + Admin
+- Body: `{ mentor_id, mentee_id }`
 
 `GET /api/admins/feedback`
-Auth: `x-api-key` + JWT + Admin
-Query: `category` (optional), `status` (optional)
-Response: list of feedback entries.
+Lists feedback.
+- Auth: `x-api-key` + JWT + Admin
+- Query: `category?`, `status?`
 
 `PUT /api/admins/feedback/<feedback_id>/status`
-Auth: `x-api-key` + JWT + Admin
-Body: JSON `{ status }`
-Response: `{ message, feedback }`
+Updates feedback status.
+- Auth: `x-api-key` + JWT + Admin
+- Body: `{ status }`
 
 `GET /api/admins/analytics/summary`
-Auth: `x-api-key` + JWT + Admin
-Response: `{ message, stats }`
+Summary stats.
+- Auth: `x-api-key` + JWT + Admin
 
 `GET /api/admins/analytics/export/users.csv`
-Auth: `x-api-key` + JWT + Admin
-Response: CSV file download.
+Downloads CSV.
+- Auth: `x-api-key` + JWT + Admin
 
 `GET /api/admins/analytics/export/summary.pdf`
-Auth: `x-api-key` + JWT + Admin
-Response: PDF file download.
+Downloads PDF.
+- Auth: `x-api-key` + JWT + Admin
 
 `GET /api/admins/audit-logs`
-Auth: `x-api-key` + JWT + Super Admin
-Response: list of audit logs.
+Lists audit logs.
+- Auth: `x-api-key` + JWT + Super Admin
 
-**Events**
+---
+
+## Events
+
 Base path: `/api/events`
 
 `GET /api/events/`
-Auth: JWT
-Response: list of approved events.
+Lists approved events.
+- Auth: JWT
 
 `GET /api/events/<event_id>`
-Auth: JWT
-Response: event detail.
+Gets a single event.
+- Auth: JWT
 
 `POST /api/events/`
-Auth: JWT
-Body: JSON `{ name, description, date, time, location, event_type, capacity, image_url? }`
-Or: `multipart/form-data` with fields `name`, `description`, `date`, `time`, `location`, `event_type`, `capacity` and optional file `image`
-Notes: `date` is ISO date (`YYYY-MM-DD`), `time` is `HH:MM`.
-Notes: If `image` is provided, it is uploaded to Cloudinary and stored as `image_url`.
-Response: `{ id, name, message }`
+Creates event.
+- Auth: JWT
+- JSON body: `{ name, description, date, time, location, event_type, capacity, image_url? }`
+- Or multipart form: fields `name`, `description`, `date`, `time`, `location`, `event_type`, `capacity` with optional file `image`
+- Notes: If `image` is provided, it is uploaded to Cloudinary and stored as `image_url`.
+- `date`: `YYYY-MM-DD`
+- `time`: `HH:MM`
 
 `POST /api/events/<event_id>/rsvp`
-Auth: JWT
-Response: `{ event_id, message }`
+RSVP to event.
+- Auth: JWT
 
 `POST /api/events/<event_id>/cancel_rsvp`
-Auth: JWT
-Response: `{ event_id, message }`
+Cancel RSVP.
+- Auth: JWT
 
 `GET /api/events/user-rsvps`
-Auth: JWT
-Response: `{ events: [<event>] }`
+Lists events the current user has RSVP’d to.
+- Auth: JWT
+- Response: `{ events: [<event>] }`
 
 `GET /api/events/type/<event_type>`
-Auth: JWT
-Response: list of events filtered by type.
+Lists events by type.
+- Auth: JWT
 
-Event fields include: `image_url`, `user_has_rsvpd`.
+**Event Object Fields**
+- `id`, `name`, `description`, `date`, `time`, `location`, `event_type`, `capacity`
+- `image_url`
+- `rsvp_count`
+- `is_open_for_registration`
+- `user_has_rsvpd`
 
-**Resources**
+---
+
+## Resources
+
 Base path: `/api/resources`
 
 `POST /api/resources/`
-Auth: JWT
-Consumes: `multipart/form-data`
-Required form fields: `title`, `author`, `course_title`, `level`
-Required file: `file`
-Optional form fields: `contributors` (repeatable)
-Response: `{ message, resource }`
+Uploads resource.
+- Auth: JWT
+- Content-Type: `multipart/form-data`
+- Required fields: `title`, `author`, `course_title`, `level`
+- Required file: `file`
+- Optional: `contributors` (repeatable)
 
 `GET /api/resources/level/<level>`
-Auth: JWT
-Response: list of approved resources for a level.
-
-Resource fields include: `file_type`, `file_size`, `status`, `is_approved`.
-Notes: `file_type` and `file_size` are derived at upload time and may be `null` if unavailable.
+Lists approved resources for a level.
+- Auth: JWT
 
 `GET /api/resources/pending`
-Auth: JWT + Admin
-Response: list of pending resources.
+Lists pending resources.
+- Auth: JWT + Admin
 
 `POST /api/resources/<resource_id>/approve`
-Auth: JWT + Admin
-Response: `{ message, resource }`
+Approves resource.
+- Auth: JWT + Admin
 
 `DELETE /api/resources/<resource_id>`
-Auth: JWT + Admin
-Response: `{ message }`
+Deletes resource and file.
+- Auth: JWT + Admin
 
-**Forums**
+**Resource Object Fields**
+- `id`, `title`, `author`, `course_title`, `level`
+- `file_url`, `file_type`, `file_size`
+- `contributors`, `uploaded_by`, `status`, `is_approved`, `created_at`
+
+Notes: `file_type` and `file_size` are derived at upload time and may be `null` if unavailable.
+
+---
+
+## Forums
+
 Base path: `/api/forums`
 
 `GET /api/forums/`
-Auth: none
-Response: list of forums.
+Lists forums.
+- Auth: none
 
 `POST /api/forums/`
-Auth: JWT + Admin
-Body: JSON `{ name, description, is_general? }`
-Response: `{ message, forum }`
+Creates forum.
+- Auth: JWT + Admin
+- Body: `{ name, description, is_general? }`
 
 `POST /api/forums/<forum_id>/join`
-Auth: JWT
-Response: `{ message }`
+Join a forum.
+- Auth: JWT
 
 `POST /api/forums/<forum_id>/threads`
-Auth: JWT
-Body: JSON `{ title, body }`
-Response: `{ message, thread }`
+Create a thread.
+- Auth: JWT
+- Body: `{ title, body }`
 
 `GET /api/forums/threads/<thread_id>`
-Auth: JWT
-Response: `{ thread, messages }`
+Get a thread + messages.
+- Auth: JWT
 
 `POST /api/forums/threads/<thread_id>/messages`
-Auth: JWT
-Consumes: `multipart/form-data`
-Required form field: `content`
-Optional file: `attachment`
-Optional form field: `parent_message_id`
-Response: `{ message, message }`
-Notes: Emits Socket.IO event `new_message` to room `thread_<thread_id>`.
+Post message.
+- Auth: JWT
+- Content-Type: `multipart/form-data`
+- Required: `content`
+- Optional: `attachment`, `parent_message_id`
 
 `GET /api/forums/explore`
-Auth: none
-Response: list of forums.
+Lists forums.
+- Auth: none
 
 `GET /api/forums/recommended`
-Auth: none
-Response: list of recommended forums.
+Lists recommended forums.
+- Auth: none
 
 `GET /api/forums/top-contributors`
-Auth: none
-Response: list of user summaries.
+Lists top contributors.
+- Auth: none
 
 `GET /api/forums/threads/<thread_id>/messages`
-Auth: none
-Response: list of messages in a thread.
+Lists messages.
+- Auth: none
 
 `POST /api/forums/messages/<message_id>/like`
-Auth: JWT
-Response: `{ message, likes }`
+Likes a message.
+- Auth: JWT
 
 **Socket.IO Events**
 `join_thread`
@@ -353,71 +425,86 @@ Server emits: `user_joined` to room `thread_<thread_id>`.
 Client emits: `{ thread_id, user_id }`
 Server emits: `user_left` to room `thread_<thread_id>`.
 
-**Mentorship**
+---
+
+## Mentorship
+
 Base path: `/api/mentorship`
 
 `POST /api/mentorship/apply`
-Auth: JWT
-Body: JSON `{ matric_no, level, areas_of_interest }`
-Response: `{ message, application }`
+Apply as mentee.
+- Auth: JWT
+- Body: `{ matric_no, level, areas_of_interest }`
 
 `POST /api/mentorship/apply-mentor`
-Auth: JWT
-Body: JSON `{ academic_background, area_of_expertise?, preferred_mode, phone_no?, areas_of_interest?, current_level? }`
-Notes: `phone_no` is optional. If `area_of_expertise` is not provided, `current_level` is used as fallback.
-Response: `{ message, application }`
+Apply as mentor.
+- Auth: JWT
+- Body: `{ academic_background, area_of_expertise?, preferred_mode, phone_no?, areas_of_interest?, current_level? }`
+- Notes: `phone_no` is optional. If `area_of_expertise` is not provided, `current_level` is used.
 
 `GET /api/mentorship/applications`
-Auth: JWT + Admin
-Response: list of pending mentee applications.
+List pending mentee applications.
+- Auth: JWT + Admin
 
 `GET /api/mentorship/mentor-applications`
-Auth: JWT + Admin
-Response: list of pending mentor applications.
+List pending mentor applications.
+- Auth: JWT + Admin
 
 `POST /api/mentorship/mentor-applications/<application_id>/approve`
-Auth: JWT + Admin
-Response: `{ message, application }`
+Approve mentor application.
+- Auth: JWT + Admin
 
 `POST /api/mentorship/mentor-applications/<application_id>/reject`
-Auth: JWT + Admin
-Body: JSON `{ reason }`
-Response: `{ message, application }`
+Reject mentor application.
+- Auth: JWT + Admin
+- Body: `{ reason }`
 
 `POST /api/mentorship/assign-mentor`
-Auth: JWT + Admin
-Body: JSON `{ mentorship_application_id, mentor_id }`
-Response: `{ message, mentorship }`
+Assign mentor.
+- Auth: JWT + Admin
+- Body: `{ mentorship_application_id, mentor_id }`
 
 `POST /api/mentorship/schedule-session`
-Auth: JWT
-Body: JSON `{ mentorship_id, scheduled_time, duration, notes? }`
-Notes: `scheduled_time` must be ISO format.
-Response: `{ message, session }`
+Schedule session.
+- Auth: JWT
+- Body: `{ mentorship_id, scheduled_time, duration, notes? }`
+- Notes: `scheduled_time` must be ISO format.
 
 `POST /api/mentorship/submit-feedback`
-Auth: JWT
-Body: JSON `{ session_id, rating, comments? }`
-Response: `{ message, feedback }`
+Submit feedback.
+- Auth: JWT
+- Body: `{ session_id, rating, comments? }`
 
 `GET /api/mentorship/my-mentorships`
-Auth: JWT
-Response: `{ as_mentor: [...], as_mentee: [...] }`
-Notes: Each mentorship object includes `area_of_expertise` when available.
+Get mentorships for current user.
+- Auth: JWT
+- Notes: Each mentorship object includes `area_of_expertise` when available.
 
 `GET /api/mentorship/mentorships/<mentorship_id>/sessions`
-Auth: JWT
-Response: list of sessions. Requires requester to be mentor or mentee in this mentorship.
+Get sessions for mentorship.
+- Auth: JWT
+- Requires user to be mentor or mentee for the mentorship.
 
 `POST /api/mentorship/mentorships/<mentorship_id>/complete`
-Auth: JWT
-Response: `{ message, mentorship }`
-Notes: Only mentor or admin can complete.
+Complete mentorship.
+- Auth: JWT
+- Only mentor or admin can complete.
 
-**Feedback**
+---
+
+## Feedback
+
 Base path: `/api/feedback`
 
 `POST /api/feedback/`
-Auth: JWT
-Body: JSON `{ subject, message, category? }`
-Response: `{ message, feedback }`
+Create feedback.
+- Auth: JWT
+- Body: `{ subject, message, category? }`
+
+---
+
+## Notes For Frontend
+
+- Event `user_has_rsvpd` is computed per request from the current JWT identity.
+- Resource `file_type` and `file_size` may be `null` if the upload stream does not expose size.
+- Admin endpoints always require `x-api-key` + JWT.

@@ -24,8 +24,11 @@ def create_app(config_class='app.config.Development'):
     cors_origins = os.getenv('CORS_ORIGINS', '*')
     if cors_origins != '*':
         cors_origins = [origin.strip() for origin in cors_origins.split(',')]
-    
-    CORS(app)
+    else:
+        # Default development origins
+        cors_origins = ["http://localhost:5173", "http://localhost:3000", "*"]
+
+    CORS(app, resources={r"/*": {"origins": cors_origins}}, supports_credentials=True)
 
     #from models import api_key, event, user
     db.init_app(app)
