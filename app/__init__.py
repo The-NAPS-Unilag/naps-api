@@ -25,7 +25,6 @@ def create_app(config_class='app.config.Development'):
                 "origins": [
                     "http://localhost:5173",
                     "https://naps.odamarketplace.com",
-                    "https://naps.odamarketplace.com/api/events",
                     "http://192.168.0.163:5173",
                 ],
                 "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
