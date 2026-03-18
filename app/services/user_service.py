@@ -1,4 +1,3 @@
-import random
 import string
 import datetime
 import secrets
@@ -14,8 +13,7 @@ from app.models.mentorship import Mentorship
 from app.schemas.user_schema import UserSchema
 from werkzeug.security import generate_password_hash, check_password_hash
 from email_validator import validate_email, EmailNotValidError
-from sqlalchemy.orm import Session
-from sqlalchemy import func, or_
+from sqlalchemy import or_
 
 
 # OTP Configuration
