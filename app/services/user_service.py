@@ -190,109 +190,25 @@ def cleanup_expired_otps():
         del otp_store[email]
 
 def get_user_by_id(user_id):
-    with Session(db.engine) as session:
-        return session.get(User, user_id)
+    """Get a single user by their ID."""
+    return User.query.get(user_id)
 
 
 def user_exist(user_id):
-    """
-    Check if a user exists by user ID.
-
-    This function attempts to retrieve a user by their ID. If the user does not exist,
-    it returns a JSON response with an appropriate error message and status code.
-
-    Args:
-        user_id (int): The ID of the user to check.
-
-    Returns:
-        Response: A JSON response indicating whether the user was found or not.
-    """
+    """Check if a user exists by user ID."""
     try:
         get_user_by_id(user_id)
     except BaseException:
         return jsonify({'msg': 'User not found'}), 404
 
 
-def load_user(user_id):  # not all routes will need to have user_id. e.g creating User
-    """
-    Load a user by user ID.
-
-    This function attempts to load a user by their ID and serialize the user data.
-    If the user does not exist or an error occurs, it returns a JSON response with
-    an appropriate error message and status code.
-
-    Args:
-        user_id (int): The ID of the user to load.
-
-    Returns:
-        Response: A JSON response with the serialized user data or an error message.
-    """
-    try:
-        if (user_exist(user_id)):
-            user = get_user_by_id(user_id)
-            user_schema = UserSchema()
-
-            return user_schema.load(user), 201
-    except BaseException:
-        return jsonify({'msg': 'Error, could not load!'}, 404)
-
-
-def dump_user(user_id):
-    """
-    Dump a user by user ID.
-
-    This function attempts to dump a user by their ID and serialize the user data.
-    If the user does not exist or an error occurs, it returns a JSON response with
-    an appropriate error message and status code.
-
-    Args:
-        user_id (int): The ID of the user to dump.
-
-    Returns:
-        Response: A JSON response with the serialized user data or an error message.
-    """
-    try:
-        if (user_exist(user_id)):
-            user = get_user_by_id(user_id)
-            user_schema = UserSchema()
-
-            return user_schema.dump(user), 201
-    except BaseException:
-        return jsonify({'msg': 'Error, could not dump!'}), 404
-
-
 def filter_by_email(email):
-    """
-    Filter a user by email.
+    """Filter a user by email."""
+    return User.query.filter_by(email=email).first()
 
-    This function attempts to retrieve a user by their email address.
-
-    Args:
-        email (str): The email address of the user to filter by.
-
-    Returns:
-        User: The user object if found, otherwise None.
-    """
-    user = User.query.filter_by(email=email).first()
-
-    return user
 
 def create_user(firstname, lastname, email, current_level, matric_no, password, departmental_fees=None, profile_picture=None):
-    """
-    Create a new user.
-
-    This function creates a new user with the provided email, current level, matriculation number,
-    and password.
-
-    Args:
-        email (str): The email address of the new user.
-        current_level (str): The current level of the new user.
-        matric_no (str): The matriculation number of the new user.
-        password (str): The password for the new user.
-
-    Returns:
-        User: The newly created user object.
-    """
+    """Create a new user."""
     user_schema = UserSchema()
 
     new_user = User(
@@ -312,6 +228,7 @@ def create_user(firstname, lastname, email, current_level, matric_no, password, 
     send_verification_email(new_user)
     return user_schema.dump(new_user)
 
+
 def _validate_password(password):
     """Validate password against security requirements."""
     if len(password) < 8:
@@ -323,6 +240,7 @@ def _validate_password(password):
     if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
         return False, "Password must contain at least one special character."
     return True, ""
+
 
 def create_admin_user(email, password, firstname, lastname, is_super_admin=False):
     """Create a new admin or super admin user."""
@@ -339,16 +257,13 @@ def create_admin_user(email, password, firstname, lastname, is_super_admin=False
         lastname=lastname,
         is_admin=True,
         is_super_admin=is_super_admin,
-        is_confirmed=True  # Admins are confirmed by default
+        is_confirmed=True
     )
     user.hash_password(password)
     db.session.add(user)
     db.session.commit()
     return user, "Admin user created successfully."
 
-def get_user_by_id(user_id):
-    """Get a single user by their ID."""
-    return User.query.get(user_id)
 
 def get_all_users(search=None):
     """Get all non-admin users, with optional search."""
@@ -522,25 +437,3 @@ def reset_password(email: str, otp: str, new_password: str):
     except Exception as e:
         current_app.logger.error(f"Password reset failed: {str(e)}")
         return jsonify({'message': 'Password reset failed'}), 500
-
-def delete_user(user_id):
-    """
-    Delete a user.
-
-    This function deletes a user by their ID.
-
-    Args:
-        user_id (int): The ID of the user to delete.
-
-    Returns:
-        Response: A JSON response indicating the result of the deletion process.
-
-    """
-    try:
-        if(user_exist(user_id)):
-            with Session(db.engine) as session:
-                    user = session.get(User, user_id)
-                    session.delete(user)
-                    session.commit()
-    except BaseException:
-        return jsonify({'msg': 'Error, could not delete user!'}), 404

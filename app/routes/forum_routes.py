@@ -120,7 +120,7 @@ def send_message(thread_id):
         'message': message.to_dict()
     }, room=f'thread_{thread_id}')
 
-    return jsonify({'message': 'Message sent successfully.', 'message': message.to_dict()}), 200
+    return jsonify({'message': 'Message sent successfully.', 'message_data': message.to_dict()}), 200
 
 @forum_bp.route('/explore', methods=['GET'])
 def explore_forums():

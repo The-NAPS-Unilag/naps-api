@@ -2,14 +2,31 @@
 
 For full route reference, see `docs/API_ROUTES.md`.
 
+## Important Notes for Frontend Developers
+
+### Field Naming Conventions
+- **User profile**: Use `current_level` (not `level`) when referencing the user's academic level
+- **Login response**: Returns `is_super_admin` and `is_active` fields in addition to other user fields
+
+### Known Quirks
+- **Forum send message**: The response returns the message object under the key `message_data` (not `message`)
+- **Admin login**: Requires both `X-API-Key` header AND valid admin credentials
+
+### Recent Updates (March 2026)
+- Login response now includes `is_super_admin` and `is_active` fields
+- Forum message response uses `message_data` key for the message object
+
 ## Getting Started
 
 ### Base URL
 All API endpoints start with: `https://your-domain.com/api`
 
 ### Authentication Requirements
-Most endpoints require two things:
-1. **API Key** - Include in request headers as `X-API-Key`
+Some endpoints require two things:
+
+1. **API Key** - Include in request headers as `X-API-Key` (just admin , dont think)
+
+
 2. **JWT Token** - Include in request headers as `Authorization: Bearer <token>`
 
 ### Common Response Format
@@ -207,8 +224,10 @@ Content-Type: application/json
     "departmental_fees": "https://s3-url.com/receipt.jpg",
     "bio": "Student bio",
     "is_admin": false,
+    "is_super_admin": false,
     "is_verified": true,
     "is_mentor": false,
+    "is_active": true,
     "is_confirmed": true,
     "mentor": {
       "id": 456,
@@ -1008,14 +1027,11 @@ formData.append('attachment', fileObject); // optional
 ```json
 {
   "message": "Message sent successfully.",
-  "message": {
+  "message_data": {
     "id": 602,
     "content": "Here is my response...",
-    "user": {
-      "id": 123,
-      "firstname": "John",
-      "lastname": "Doe"
-    },
+    "thread_id": 501,
+    "sent_by": 123,
     "created_at": "2024-02-15T11:30:00",
     "likes": 0,
     "attachment_url": "https://s3-url.com/file.pdf"

@@ -41,7 +41,7 @@ class User(db.Model):
             'firstname': self.firstname,
             'lastname': self.lastname,
             'matric_no': self.matric_no,
-            'level': self.current_level,
+            'current_level': self.current_level,
             'department': self.department,
             'is_admin': self.is_admin,
             'is_super_admin': self.is_super_admin,
@@ -59,13 +59,13 @@ class User(db.Model):
     def onboard_details(
             self,
             firstname,
-            secondname,
+            lastname,
             department,
             current_level,
             matric_no):
 
         self.firstname = firstname
-        self.secondname = secondname
+        self.lastname = lastname
         self.department = department
         self.current_level = current_level
         self.matric_no = matric_no

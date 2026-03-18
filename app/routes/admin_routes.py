@@ -39,7 +39,7 @@ def login_admin():
 
     user = User.query.filter_by(email=data['email']).first()
 
-    if user and (user.is_admin or user.is_super_admin) and user.check_password(data['password']):
+    if user and (user.is_admin or user.is_super_admin) and user.verify_password(data['password']):
         access_token = create_access_token(identity=user.id)
         return jsonify(access_token=access_token), 200
     else:

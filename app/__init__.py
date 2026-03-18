@@ -26,6 +26,8 @@ def create_app(config_class='app.config.Development'):
                     "http://localhost:5173",
                     "https://naps.odamarketplace.com",
                     "http://192.168.0.163:5173",
+                    "http://localhost:5000",
+                    "http://127.0.0.1"
                 ],
                 "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
                 "allow_headers": ["Content-Type", "Authorization"],

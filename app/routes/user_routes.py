@@ -172,8 +172,10 @@ def login_user():
             'departmental_fees': user.departmental_fees,
             'bio': user.bio,
             'is_admin': user.is_admin,
+            'is_super_admin': user.is_super_admin,
             'is_verified': user.is_verified,
             'is_mentor': user.is_mentor,
+            'is_active': user.is_active,
             'is_confirmed': user.is_confirmed,
             'mentor': mentor_data
         }
@@ -214,8 +216,10 @@ def login_user_matric():
             'departmental_fees': user_matric.departmental_fees,
             'bio': user_matric.bio,
             'is_admin': user_matric.is_admin,
+            'is_super_admin': user_matric.is_super_admin,
             'is_verified': user_matric.is_verified,
             'is_mentor': user_matric.is_mentor,
+            'is_active': user_matric.is_active,
             'is_confirmed': user_matric.is_confirmed,
             'mentor': mentor_data
         }
