@@ -29,6 +29,11 @@ def apply_for_mentorship():
         if field not in data:
             return jsonify({'message': f'{field} is required'}), 400
 
+    from app.models.mentorship import MentorshipApplication
+    existing = MentorshipApplication.query.filter_by(student_id=user_id).first()
+    if existing:
+        return jsonify({'message': 'You have already submitted an application.'}), 409
+
     try:
         application = MentorshipService.apply_for_mentorship(
             student_id=user_id,
@@ -85,8 +90,8 @@ def apply_to_be_mentor():
         return jsonify({'message': str(e)}), 500
 
 @mentorship_bp.route('/applications', methods=['GET'])
-@admin_required
 @jwt_required()
+@admin_required
 def get_pending_applications():
     """Get pending mentorship applications (Admin only)"""
     user_id = get_jwt_identity()
@@ -99,8 +104,8 @@ def get_pending_applications():
     return jsonify([app.to_dict() for app in applications]), 200
 
 @mentorship_bp.route('/mentor-applications', methods=['GET'])
-@admin_required
 @jwt_required()
+@admin_required
 def get_pending_mentor_applications():
     """Get pending mentor applications (Admin only)"""
     user_id = get_jwt_identity()
@@ -113,8 +118,8 @@ def get_pending_mentor_applications():
     return jsonify([app.to_dict() for app in applications]), 200
 
 @mentorship_bp.route('/mentor-applications/<int:application_id>/approve', methods=['POST'])
-@admin_required
 @jwt_required()
+@admin_required
 def approve_mentor_application(application_id):
     """Approve a mentor application (Admin only)"""
     user_id = get_jwt_identity()
@@ -133,8 +138,8 @@ def approve_mentor_application(application_id):
     }), 200
 
 @mentorship_bp.route('/mentor-applications/<int:application_id>/reject', methods=['POST'])
-@admin_required
 @jwt_required()
+@admin_required
 def reject_mentor_application(application_id):
     """Reject a mentor application (Admin only)"""
     user_id = get_jwt_identity()
@@ -157,8 +162,8 @@ def reject_mentor_application(application_id):
     }), 200
 
 @mentorship_bp.route('/assign-mentor', methods=['POST'])
-@admin_required
 @jwt_required()
+@admin_required
 def assign_mentor():
     """Assign a mentor to a student (Admin only)"""
     user_id = get_jwt_identity()

@@ -44,15 +44,20 @@ def _create_and_login_user(test_client, api_key_header, email, password, firstna
 
 
 def _create_and_login_admin(test_client, api_key_header, email, password):
-    resp = test_client.post('/api/admin/create', json={
+    with test_client.application.app_context():
+        from app.services.user_service import create_admin_user
+        user, message = create_admin_user(
+            email=email,
+            password=password,
+            firstname='Admin',
+            lastname='User',
+            is_super_admin=False,
+        )
+        assert user is not None, f"Admin creation failed: {message}"
+
+    login_resp = test_client.post('/api/admins/login', json={
         'email': email,
         'password': password,
-    }, headers=api_key_header)
-    assert resp.status_code == 201, f"Admin creation failed: {resp.data}"
-
-    login_resp = test_client.post('/api/admin/login', json={
-        'email': email,
-        'password': password
     }, headers=api_key_header)
     assert login_resp.status_code == 200, f"Admin login failed: {login_resp.data}"
     access_token = login_resp.json.get('access_token')
@@ -90,7 +95,7 @@ def setup(test_client):
         test_client,
         api_key_header,
         email='mentorshipadmin@example.com',
-        password='adminpassword',
+        password='Adminpassword1!',
     )
 
     return {
@@ -189,10 +194,12 @@ def test_get_pending_mentor_applications_admin(test_client, setup):
 
 
 def test_approve_mentor_application(test_client, setup):
-    response = test_client.post(
-        '/api/mentorship/mentor-applications/1/approve',
-        headers=setup['admin_token'],
-    )
+    with patch('app.services.mentorship.mail.send') as mock_mail:
+        mock_mail.return_value = None
+        response = test_client.post(
+            '/api/mentorship/mentor-applications/1/approve',
+            headers=setup['admin_token'],
+        )
     assert response.status_code == 200
     data = response.get_json()
     assert 'application' in data
@@ -220,14 +227,16 @@ def test_assign_mentor(test_client, setup):
     # Get mentor user ID from the mentor application (approved mentor's applicant_id)
     mentor_app_applicant_id = mentor_applications[0]['applicant_id'] if mentor_applications else 2
 
-    response = test_client.post(
-        '/api/mentorship/assign-mentor',
-        json={
-            'mentorship_application_id': 1,
-            'mentor_id': mentor_app_applicant_id,
-        },
-        headers=setup['admin_token'],
-    )
+    with patch('app.services.mentorship.mail.send') as mock_mail:
+        mock_mail.return_value = None
+        response = test_client.post(
+            '/api/mentorship/assign-mentor',
+            json={
+                'mentorship_application_id': 1,
+                'mentor_id': mentor_app_applicant_id,
+            },
+            headers=setup['admin_token'],
+        )
     assert response.status_code == 201
     data = response.get_json()
     assert 'mentorship' in data
@@ -248,16 +257,18 @@ def test_get_my_mentorships_as_mentee(test_client, setup):
 
 
 def test_schedule_session(test_client, setup):
-    response = test_client.post(
-        '/api/mentorship/schedule-session',
-        json={
-            'mentorship_id': 1,
-            'scheduled_time': '2027-06-15T10:00:00',
-            'duration': 60,
-            'notes': 'Introduction session',
-        },
-        headers=setup['student_token'],
-    )
+    with patch('app.services.mentorship.mail.send') as mock_mail:
+        mock_mail.return_value = None
+        response = test_client.post(
+            '/api/mentorship/schedule-session',
+            json={
+                'mentorship_id': 1,
+                'scheduled_time': '2027-06-15T10:00:00',
+                'duration': 60,
+                'notes': 'Introduction session',
+            },
+            headers=setup['student_token'],
+        )
     assert response.status_code == 201
     data = response.get_json()
     assert 'session' in data

@@ -111,10 +111,16 @@ def validate_event_data(event_data: Dict[str, Any]) -> Tuple[bool, Optional[str]
         return False, "Capacity must be greater than 0"
 
     try:
-        event_date = datetime.strptime(f"{event_data['date']} {event_data['time']}", "%Y-%m-%d %H:%M")
+        from datetime import date as date_type, time as time_type
+        d = event_data['date']
+        t = event_data['time']
+        if isinstance(d, date_type) and isinstance(t, time_type):
+            event_date = datetime.combine(d, t)
+        else:
+            event_date = datetime.strptime(f"{d} {t}", "%Y-%m-%d %H:%M")
         if event_date < datetime.now():
             return False, "Event cannot be in the past"
-    except ValueError:
+    except (ValueError, TypeError):
         return False, "Invalid date or time format"
 
     return True, None

@@ -46,15 +46,20 @@ def _create_and_login_user(test_client, api_key_header, email, password, firstna
 
 
 def _create_and_login_admin(test_client, api_key_header, email, password):
-    resp = test_client.post('/api/admin/create', json={
+    with test_client.application.app_context():
+        from app.services.user_service import create_admin_user
+        user, message = create_admin_user(
+            email=email,
+            password=password,
+            firstname='Admin',
+            lastname='User',
+            is_super_admin=False,
+        )
+        assert user is not None, f"Admin creation failed: {message}"
+
+    login_resp = test_client.post('/api/admins/login', json={
         'email': email,
         'password': password,
-    }, headers=api_key_header)
-    assert resp.status_code == 201, f"Admin creation failed: {resp.data}"
-
-    login_resp = test_client.post('/api/admin/login', json={
-        'email': email,
-        'password': password
     }, headers=api_key_header)
     assert login_resp.status_code == 200, f"Admin login failed: {login_resp.data}"
     access_token = login_resp.json.get('access_token')
@@ -81,7 +86,7 @@ def setup(test_client):
         test_client,
         api_key_header,
         email='resourceadmin@example.com',
-        password='adminpassword',
+        password='Adminpassword1!',
     )
 
     return {

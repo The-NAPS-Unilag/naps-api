@@ -6,8 +6,14 @@ event_id = None
 
 
 @pytest.fixture(scope="module")
-def setup_user(test_client, api_key_header):
+def setup_user(test_client):
     """Create and confirm a user, then return the user token header."""
+    api_key_response = test_client.post('/api/test_generate_api_key')
+    assert api_key_response.status_code == 201
+    api_key = api_key_response.json.get('api_key')
+    assert api_key is not None
+    api_key_header = {'x-api-key': api_key}
+
     with patch('app.services.user_service.send_verification_email') as mock_send_otp:
         mock_send_otp.return_value = (jsonify({'message': 'OTP sent successfully'}), 200)
 
