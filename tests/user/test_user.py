@@ -6,7 +6,7 @@ def test_user_signup(test_client, api_key_header):
     with patch('app.services.user_service.send_verification_email') as mock_send_otp:
         mock_send_otp.return_value = (jsonify({'message': 'OTP sent successfully'}), 200)
 
-        response = test_client.post('/api/users', json={
+        response = test_client.post('/api/users', data={
             'firstname': 'olaoluwa',
             'lastname': 'lastname',
             'email': 'test@example.com',
@@ -56,7 +56,7 @@ def test_user_login_matric(test_client, api_key_header):
 
 def test_edit_existing_user(test_client, user_token_header):
     response = test_client.put(
-        'api/users/update/1',
+        '/api/users/update/1',
         json={
             "current_level": "300L",
             "profile_picture": "https://pic.com/new_picture",
@@ -66,7 +66,7 @@ def test_edit_existing_user(test_client, user_token_header):
     assert response.status_code == 200
 
 def test_list_one_user(test_client, user_token_header):
-    response = test_client.get('api/users/1', headers=user_token_header)
+    response = test_client.get('/api/users/me', headers=user_token_header)
     assert response.status_code == 200
 
 def test_list_all_users(test_client, user_token_header):
@@ -74,7 +74,7 @@ def test_list_all_users(test_client, user_token_header):
     per_page = 10
 
     response = test_client.get(
-        f'api/users?page={page}&per_page={per_page}',
+        f'/api/users?page={page}&per_page={per_page}',
         headers=user_token_header
     )
 
@@ -92,7 +92,7 @@ def test_delete_existing_user(test_client, api_key_header):
         mock_send_otp.return_value = (jsonify({'message': 'OTP sent successfully'}), 200)
 
         # Create a new user to delete
-        response = test_client.post('/api/users', json={
+        response = test_client.post('/api/users', data={
             'firstname': 'firstname',
             'lastname': 'lastname',
             'email': 'deletetest@example.com',
@@ -123,7 +123,7 @@ def test_delete_existing_user(test_client, api_key_header):
     delete_header = {**api_key_header, 'Authorization': f'Bearer {access_token}'}
 
     # Delete the user
-    delete_response = test_client.delete('api/users/delete/2', headers=delete_header)
+    delete_response = test_client.delete('/api/users/delete/2', headers=delete_header)
     assert delete_response.status_code == 200
 
 def test_confirm_email(test_client, api_key_header):
@@ -138,15 +138,15 @@ def test_confirm_email(test_client, api_key_header):
         assert b'Email confirmed successfully' in response.data
 
 def test_forget_password(test_client, api_key_header):
-    with patch('app.services.user_service.send_verification_email') as mock_send_otp:
-        mock_send_otp.return_value = (jsonify({'message': 'OTP sent successfully'}), 200)
+    with patch('app.services.user_service.mail.send') as mock_mail_send:
+        mock_mail_send.return_value = None
 
         # Request password reset
         response = test_client.post('/api/users/forgot-password', json={
             'email': 'test@example.com'
         }, headers=api_key_header)
         assert response.status_code == 200
-        assert b'OTP sent successfully' in response.data
+        assert b'Password reset OTP sent successfully' in response.data
 
 def test_reset_password(test_client, api_key_header):
     with patch('app.services.user_service.verify_otp') as mock_verify_otp:
