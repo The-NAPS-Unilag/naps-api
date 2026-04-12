@@ -1,6 +1,6 @@
 # Complete API Documentation
 
-For full route reference, see `docs/API_ROUTES.md`.
+For full route reference, see `docs/API_ROUTES.md`
 
 ## Important Notes for Frontend Developers
 
