@@ -17,6 +17,7 @@ from app.socketio import socketio
 def create_app(config_class='app.config.Development'):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    app.url_map.strict_slashes = False
 
     CORS(
         app,
@@ -27,6 +28,7 @@ def create_app(config_class='app.config.Development'):
                     "https://naps.odamarketplace.com",
                     "http://192.168.0.163:5173",
                     "http://localhost:5000",
+                    "http://127.0.0.1:5000",
                     "http://127.0.0.1",
                     "https://naps-frontend-gw66.vercel.app"
                 ],

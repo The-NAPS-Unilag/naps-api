@@ -61,6 +61,16 @@ def join_forum(forum_id):
 
     return jsonify({'message': message}), 200
 
+@forum_bp.route('/<int:forum_id>/threads', methods=['GET'])
+def get_forum_threads(forum_id):
+    """Get all threads in a forum."""
+    forum = ForumService.get_forum_by_id(forum_id)
+    if not forum:
+        return jsonify({'message': 'Forum not found.'}), 404
+
+    threads = ForumService.get_threads_by_forum(forum_id)
+    return jsonify([thread.to_dict() for thread in threads]), 200
+
 @forum_bp.route('/<int:forum_id>/threads', methods=['POST'])
 @jwt_required()
 def create_thread(forum_id):

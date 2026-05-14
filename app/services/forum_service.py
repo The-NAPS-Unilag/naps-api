@@ -63,7 +63,6 @@ class ForumService:
         return message, "Message sent successfully."
 
     @staticmethod
-    @staticmethod
     def get_thread_by_id(thread_id):
         """Retrieve a specific thread by its ID and increment its view count."""
         thread = Thread.query.get(thread_id)
@@ -71,6 +70,11 @@ class ForumService:
             thread.views += 1
             db.session.commit()
         return thread
+
+    @staticmethod
+    def get_threads_by_forum(forum_id):
+        """Retrieve all threads in a forum, newest first."""
+        return Thread.query.filter_by(forum_id=forum_id).order_by(Thread.created_on.desc()).all()
 
     @staticmethod
     def get_thread_messages(thread_id):

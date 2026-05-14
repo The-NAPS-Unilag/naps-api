@@ -16,7 +16,9 @@ class Forum(db.Model):
             'name': self.name,
             'description': self.description,
             'created_on': self.created_on.isoformat(),
-            'is_general': self.is_general
+            'is_general': self.is_general,
+            'member_count': ForumMember.query.filter_by(forum_id=self.id).count(),
+            'thread_count': Thread.query.filter_by(forum_id=self.id).count()
         }
 
 
