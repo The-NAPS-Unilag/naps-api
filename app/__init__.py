@@ -25,14 +25,14 @@ def create_app(config_class='app.config.Development'):
             r"/api/*": {
                 "origins": [
                     "http://localhost:5173",
-                    "https://naps.odamarketplace.com",
                     "http://192.168.0.163:5173",
                     "http://localhost:5000",
                     "http://127.0.0.1:5000",
                     "http://127.0.0.1",
-                    "https://naps-frontend-gw66.vercel.app",
                     "http://127.0.0.1:5174",
-                    "http://localhost:5174"
+                    "https://naps-web-ten.vercel.app/",
+                    "https://admin-dashboard-mu-inky-66.vercel.app/",
+                    "http://localhost:5174",
                 ],
                 "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
                 "allow_headers": ["Content-Type", "Authorization", "X-API-Key"],
