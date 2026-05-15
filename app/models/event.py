@@ -35,6 +35,24 @@ class Event(db.Model):
         rsvp = RSVP.query.filter_by(event_id=self.id, user_id=user_id).first()
         return rsvp is not None
 
+    def to_dict(self, user_id=None):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'date': self.date.strftime('%Y-%m-%d') if self.date else None,
+            'time': self.time.strftime('%H:%M') if self.time else None,
+            'location': self.location,
+            'event_type': self.event_type,
+            'capacity': self.capacity,
+            'image_url': self.image_url,
+            'is_approved': self.is_approved,
+            'is_open_for_registration': self.is_open_for_registration,
+            'rsvp_count': len(self.rsvps),
+            'created_on': self.created_on.isoformat() if self.created_on else None,
+            'user_has_rsvpd': self.get_rsvp_status_for_user(user_id) if user_id else False,
+        }
+
     def add_rsvp(self, user_id):
         """Add an RSVP for a user if the event is open and not full."""
         if not self.is_open_for_registration or self.is_full() or self.is_past_event():
