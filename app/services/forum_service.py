@@ -100,3 +100,21 @@ class ForumService:
             db.session.commit()
             return message
         return None
+
+    @staticmethod
+    def delete_forum(forum_id):
+        """Delete a forum and all its threads, messages, and members."""
+        forum = Forum.query.get(forum_id)
+        if not forum:
+            return False, 'Forum not found.'
+        try:
+            for thread in Thread.query.filter_by(forum_id=forum_id).all():
+                Message.query.filter_by(thread_id=thread.id).delete()
+            Thread.query.filter_by(forum_id=forum_id).delete()
+            ForumMember.query.filter_by(forum_id=forum_id).delete()
+            db.session.delete(forum)
+            db.session.commit()
+            return True, 'Forum deleted successfully.'
+        except Exception as e:
+            db.session.rollback()
+            return False, str(e)

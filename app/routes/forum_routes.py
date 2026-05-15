@@ -132,6 +132,17 @@ def send_message(thread_id):
 
     return jsonify({'message': 'Message sent successfully.', 'message_data': message.to_dict()}), 200
 
+@forum_bp.route('/<int:forum_id>', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def delete_forum(forum_id):
+    """Delete a forum and all its content (admin only)."""
+    success, message = ForumService.delete_forum(forum_id)
+    if not success:
+        status = 404 if 'not found' in message.lower() else 500
+        return jsonify({'message': message}), status
+    return jsonify({'message': message}), 200
+
 @forum_bp.route('/explore', methods=['GET'])
 def explore_forums():
     """Explore all available forums."""

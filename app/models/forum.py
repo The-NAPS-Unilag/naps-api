@@ -64,6 +64,7 @@ class Message(db.Model):
     replies = db.relationship('Message', backref=db.backref('parent', remote_side=[id]), lazy='dynamic')
     likes = db.Column(db.Integer, default=0)
     attachment_url = db.Column(db.String(500), nullable=True)
+    sender = db.relationship('User', foreign_keys=[sent_by])
 
     def __repr__(self):
         return f'<Message {self.id}>'
@@ -74,6 +75,12 @@ class Message(db.Model):
             'content': self.content,
             'thread_id': self.thread_id,
             'sent_by': self.sent_by,
+            'user': {
+                'id': self.sender.id,
+                'firstname': self.sender.firstname,
+                'lastname': self.sender.lastname,
+                'profile_picture': self.sender.profile_picture
+            } if self.sender else None,
             'sent_on': self.sent_on.isoformat(),
             'parent_message_id': self.parent_message_id,
             'reply_count': self.replies.count(),

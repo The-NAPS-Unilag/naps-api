@@ -243,6 +243,29 @@ def submit_feedback():
         'feedback': feedback.to_dict()
     }), 201
 
+@mentorship_bp.route('/my-mentor-application', methods=['GET'])
+@jwt_required()
+def get_my_mentor_application():
+    """Get the current user's own mentor application."""
+    user_id = get_jwt_identity()
+    application = MentorApplication.query.filter_by(
+        applicant_id=user_id
+    ).order_by(MentorApplication.created_at.desc()).first()
+    return jsonify({'application': application.to_dict() if application else None}), 200
+
+
+@mentorship_bp.route('/my-mentee-application', methods=['GET'])
+@jwt_required()
+def get_my_mentee_application():
+    """Get the current user's own mentee application."""
+    from app.models.mentorship import MentorshipApplication
+    user_id = get_jwt_identity()
+    application = MentorshipApplication.query.filter_by(
+        student_id=user_id
+    ).order_by(MentorshipApplication.created_at.desc()).first()
+    return jsonify({'application': application.to_dict() if application else None}), 200
+
+
 @mentorship_bp.route('/my-mentorships', methods=['GET'])
 @jwt_required()
 def get_my_mentorships():
