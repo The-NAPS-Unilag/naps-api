@@ -12,7 +12,7 @@ def get_platform_summary_stats():
     # User stats
     total_users = User.query.count()
     total_mentors = User.query.filter_by(is_mentor=True).count()
-    new_users_last_30_days = User.query.filter(User.created_at >= datetime.utcnow() - timedelta(days=30)).count()
+    new_users_last_30_days = User.query.filter(User.created_on >= datetime.utcnow() - timedelta(days=30)).count()
 
     # Resource stats
     total_resources = Resource.query.count()
@@ -70,7 +70,7 @@ def generate_users_csv():
             user.is_admin,
             user.is_super_admin,
             user.is_active,
-            user.created_at.isoformat()
+            user.created_on.isoformat() if user.created_on else None
         ]
         writer.writerow(row)
 
