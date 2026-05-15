@@ -102,5 +102,5 @@ def generate_summary_pdf():
             pdf.cell(200, 8, txt=f"    {key.replace('_', ' ').title()}: {value}", ln=True)
         pdf.ln(5)
 
-    pdf_output = pdf.output(dest='S').encode('latin-1')
+    pdf_output = bytes(pdf.output())
     return pdf_output, "PDF report generated successfully."

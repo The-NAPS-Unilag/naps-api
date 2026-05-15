@@ -207,8 +207,10 @@ def list_events():
     elif status == 'pending':
         approved = False
 
-    events = get_all_events(approved_status=approved)
-    return jsonify([event.to_dict() for event in events]), 200
+    result = get_all_events(approved_status=approved)
+    if not result.success:
+        return jsonify({'message': result.error}), 500
+    return jsonify([event.to_dict() for event in result.data]), 200
 
 @admin_bp.route('/events/<int:event_id>/approve', methods=['PUT'])
 @api_key_required
