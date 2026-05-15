@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from decouple import config
 
 
@@ -6,6 +8,7 @@ class Development:
     SQLALCHEMY_DATABASE_URI = config('DATABASE_URI')
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     JWT_SECRET_KEY = config('JWT_SECRET_KEY')
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=7)
     # Mail Settings
     MAIL_SERVER = "smtp.gmail.com"
     MAIL_PORT = 465
@@ -28,6 +31,7 @@ class Staging:
     SQLALCHEMY_DATABASE_URI = config('TEST_DATABASE_URI')
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     JWT_SECRET_KEY = config('JWT_SECRET_KEY')
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=7)
     MAIL_SERVER = "smtp.gmail.com"
     MAIL_PORT = 465
     MAIL_USE_TLS = False
@@ -47,6 +51,7 @@ class Production:
     SECRET_KEY = config('PROD_SECRET_KEY')
     SQLALCHEMY_DATABASE_URI = config('PROD_DATABASE_URI')
     JWT_SECRET_KEY = config('JWT_SECRET_KEY')
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=7)
     MAIL_SERVER = "smtp.gmail.com"
     MAIL_PORT = 465
     MAIL_USE_TLS = False
