@@ -30,10 +30,12 @@ def create_app(config_class='app.config.Development'):
                     "http://localhost:5000",
                     "http://127.0.0.1:5000",
                     "http://127.0.0.1",
-                    "https://naps-frontend-gw66.vercel.app"
+                    "https://naps-frontend-gw66.vercel.app",
+                    "http://127.0.0.1:5174",
+                    "http://localhost:5174"
                 ],
                 "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-                "allow_headers": ["Content-Type", "Authorization"],
+                "allow_headers": ["Content-Type", "Authorization", "X-API-Key"],
                 "supports_credentials": True,
             }
         },
