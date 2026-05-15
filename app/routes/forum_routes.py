@@ -50,6 +50,15 @@ def create_forum():
     except Exception as e:
         return jsonify({'message': f'An unexpected error occurred: {str(e)}'}), 500
 
+@forum_bp.route('/my-memberships', methods=['GET'])
+@jwt_required()
+def get_my_memberships():
+    """Get the list of forum IDs the current user has joined."""
+    from app.models.forum import ForumMember
+    user_id = get_jwt_identity()
+    memberships = ForumMember.query.filter_by(user_id=user_id).all()
+    return jsonify({'forum_ids': [m.forum_id for m in memberships]}), 200
+
 @forum_bp.route('/<int:forum_id>/join', methods=['POST'])
 @jwt_required()
 def join_forum(forum_id):

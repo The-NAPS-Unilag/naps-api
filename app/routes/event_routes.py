@@ -30,7 +30,7 @@ def format_event_response(event, user_id=None):
 @jwt_required()
 def get_all_events():
     """Get all approved events."""
-    result = event_service.get_all_events()
+    result = event_service.get_all_events(approved_status=True)
     if not result.success:
         return jsonify({'message': result.error}), HTTPStatus.INTERNAL_SERVER_ERROR
 
