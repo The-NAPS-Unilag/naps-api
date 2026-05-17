@@ -117,6 +117,9 @@ class MentorshipService:
     @staticmethod
     def create_mentorship_pairing(mentor_id, mentee_id):
         """Create a mentorship pairing between a mentor and a mentee."""
+        if mentor_id == mentee_id:
+            return None, "A user cannot be paired with themselves."
+
         mentor = User.query.filter_by(id=mentor_id, is_mentor=True).first()
         if not mentor:
             return None, "Mentor not found or user is not a mentor."
@@ -129,6 +132,12 @@ class MentorshipService:
         mentee_application = MentorshipApplication.query.filter_by(student_id=mentee_id, status='approved').first()
         if not mentee_application:
             return None, "Mentee does not have an approved application."
+
+        existing = Mentorship.query.filter_by(
+            mentor_id=mentor_id, mentee_id=mentee_id, status='active'
+        ).first()
+        if existing:
+            return None, "An active pairing already exists between this mentor and mentee."
 
         try:
             mentorship = Mentorship(mentor_id=mentor_id, mentee_id=mentee_id)
@@ -175,13 +184,11 @@ class MentorshipService:
 
         db.session.commit()
 
-        # Send approval email
-        msg = Message(
-            subject="Mentor Application Approved",
-            recipients=[user.email],
-            body=f"Congratulations! Your mentor application has been approved."
+        send_email(
+            "Mentor Application Approved",
+            [user.email],
+            f"<p>Congratulations {user.firstname}! Your mentor application has been approved.</p>"
         )
-        mail.send(msg)
 
         return application, "Mentor application approved successfully."
 
@@ -196,14 +203,12 @@ class MentorshipService:
         application.updated_at = datetime.now()
         db.session.commit()
 
-        # Send rejection email
         user = User.query.get(application.applicant_id)
-        msg = Message(
-            subject="Mentor Application Decision",
-            recipients=[user.email],
-            body=f"Your mentor application was not approved. Reason: {reason}"
+        send_email(
+            "Mentor Application Decision",
+            [user.email],
+            f"<p>Hi {user.firstname}, your mentor application was not approved. Reason: {reason}</p>"
         )
-        mail.send(msg)
 
         return application, "Mentor application rejected."
 

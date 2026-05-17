@@ -288,10 +288,11 @@ def list_mentor_applications():
 @admin_required
 def approve_mentor_app_route(app_id):
     """Approve a mentor application."""
-    application, message = MentorshipService.approve_mentor_application(app_id)
+    admin_id = get_jwt_identity()
+    application, message = MentorshipService.approve_mentor_application(app_id, admin_id)
     if not application:
         return jsonify({'message': message}), 404
-    log_admin_action(get_jwt_identity(), 'approve_mentor_application', f'Application ID: {app_id}')
+    log_admin_action(admin_id, 'approve_mentor_application', f'Application ID: {app_id}')
     return jsonify({'message': message, 'application': application.to_dict()}), 200
 
 @admin_bp.route('/mentor-applications/<int:app_id>/reject', methods=['PUT'])
@@ -300,7 +301,9 @@ def approve_mentor_app_route(app_id):
 @admin_required
 def reject_mentor_app_route(app_id):
     """Reject a mentor application."""
-    application, message = MentorshipService.reject_mentor_application(app_id)
+    data = request.get_json(silent=True) or {}
+    reason = data.get('reason', 'No reason provided.')
+    application, message = MentorshipService.reject_mentor_application(app_id, reason)
     if not application:
         return jsonify({'message': message}), 404
     log_admin_action(get_jwt_identity(), 'reject_mentor_application', f'Application ID: {app_id}')

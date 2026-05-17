@@ -17,6 +17,7 @@ class Development:
     MAIL_DEBUG = False
     MAIL_USERNAME = config("EMAIL_USER")
     MAIL_PASSWORD = config("EMAIL_PASSWORD")
+    MAIL_DEFAULT_SENDER = config("EMAIL_USER")
 
     # Cloudinary Configuration
     CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME')
@@ -39,6 +40,7 @@ class Staging:
     MAIL_DEBUG = False
     MAIL_USERNAME = config("EMAIL_USER")
     MAIL_PASSWORD = config("EMAIL_PASSWORD")
+    MAIL_DEFAULT_SENDER = config("EMAIL_USER")
     # Cloudinary Configuration
     CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME')
     CLOUDINARY_API_KEY = config('CLOUDINARY_API_KEY')
@@ -59,6 +61,7 @@ class Production:
     MAIL_DEBUG = False
     MAIL_USERNAME = config("EMAIL_USER")
     MAIL_PASSWORD = config("EMAIL_PASSWORD")
+    MAIL_DEFAULT_SENDER = config("EMAIL_USER")
     # Cloudinary Configuration
     CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME')
     CLOUDINARY_API_KEY = config('CLOUDINARY_API_KEY')
